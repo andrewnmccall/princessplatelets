@@ -1,0 +1,26 @@
+pp-deck, pp-portfolio {
+	display:block;
+}
+pp-deck pp-card {
+	position: relative;
+	&[selected]{
+		top: -2rem;
+		border: solid red 1px;
+	}
+}
+pp-rowtracker{
+	border: solid 1px black;
+	display: inline-block;
+	height: 10rem;
+	aspect-ratio: 4 / 7;
+}
+pp-card,
+pp-cardslot {
+	border: solid 1px black;
+	display: inline-block;
+	height: 10rem;
+	aspect-ratio: 5 / 7;
+}
+pp-gameboard {
+
+}
