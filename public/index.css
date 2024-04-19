@@ -8,7 +8,7 @@ pp-deck pp-card {
 		border: solid red 1px;
 	}
 }
-pp-rowtracker{
+pp-gamelanecollector{
 	border: solid 1px black;
 	display: inline-block;
 	height: 10rem;

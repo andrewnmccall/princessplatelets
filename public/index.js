@@ -1,4 +1,4 @@
-import { CardSet, Card, Game, CardSlot } from './core.js';
+import { CardSet, Card, Game, CardSlot, GameLaneCollector } from './core.js';
 
 /**
  *
@@ -81,6 +81,48 @@ class DeckElement extends HTMLElement {
 class PortfolioElement extends DeckElement {
 }
 
+class GameLaneCollectorElement extends HTMLElement {
+	#row = 0;
+	#player = 0;
+	/** @type {GameElement} */
+	#gameElement;
+	/** @type {Game} */
+	#game;
+	/** @type {GameLaneCollector} */
+	#gameLaneCollector;
+	constructor (props = {}, children = []) {
+		super();
+		this.#row = props.row;
+		this.#player = props.player;
+	}
+
+	build () {
+		this.innerHTML = `<table>
+			<tr><th>Points</th><td>${this.#gameLaneCollector.points}</td><tr>
+			<tr><th>Mod</th><td>${this.#gameLaneCollector.modifier}</td><tr>
+		</table>`;
+	}
+
+	connectedCallback () {
+		/** @type {GameElement} el */
+		const el = findParentElement(this, GameElement);
+		if (el) {
+			this.#gameElement = el;
+			this.#game = el.game;
+			this.#gameLaneCollector = el.game.getGameLaneCollector(
+				this.#player,
+				this.#row
+			);
+			this.#gameLaneCollector.on('change', () => this.build());
+			// el.game.on(Game.EVENT_CARD_PLAYED, args => {
+			// 	const cardEl = document.getElementById(args.card.id);
+			// 	this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
+			// });
+			this.build();
+		}
+	}
+}
+
 class CardSlotElement extends HTMLElement {
 	#row;
 	#col;
@@ -96,6 +138,11 @@ class CardSlotElement extends HTMLElement {
 	}
 
 	build () {
+		if (this.#cardSlot.card) {
+			const cardEl = document.getElementById(this.#cardSlot.card.id);
+			this.replaceChildren(cardEl);
+			return;
+		}
 		this.innerHTML = `<table>
 			<tr><th>Player</th><td>${this.#cardSlot.player ?? ''}</td><tr>
 			<tr><th>Pawns</th><td>${this.#cardSlot.pawnCount}</td><tr>
@@ -104,9 +151,6 @@ class CardSlotElement extends HTMLElement {
 
 	get row () { return this.#row; }
 	get col () { return this.#col; }
-}
-
-class RowTrackerElement extends HTMLElement {
 }
 
 class GameBoardElement extends HTMLElement {
@@ -133,11 +177,11 @@ class GameBoardElement extends HTMLElement {
 		this.#rowEls = [];
 		for (let i = 0; i < 3; i++) {
 			const el = this.ownerDocument.createElement('div');
-			el.append(new RowTrackerElement());
+			el.append(new GameLaneCollectorElement({ row: i, player: 0 }));
 			for (let j = 0; j < 5; j++) {
 				el.append(new CardSlotElement(i, j, this.#game.getSlot(i, j)));
 			}
-			el.append(new RowTrackerElement());
+			el.append(new GameLaneCollectorElement({ row: i, player: 1 }));
 			this.#rowEls.push(el);
 		}
 		this.replaceChildren(...this.#rowEls);
@@ -149,10 +193,10 @@ class GameBoardElement extends HTMLElement {
 		if (el) {
 			this.#gameElement = el;
 			this.#game = el.game;
-			el.game.on(Game.EVENT_CARD_PLAYED, args => {
-				const cardEl = document.getElementById(args.card.id);
-				this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
-			});
+			// el.game.on(Game.EVENT_CARD_PLAYED, args => {
+			// 	const cardEl = document.getElementById(args.card.id);
+			// 	this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
+			// });
 			this.buildSlots();
 		}
 	}
@@ -256,7 +300,7 @@ customElements.define('pp-card', CardElement);
 customElements.define('pp-deck', DeckElement);
 customElements.define('pp-portfolio', PortfolioElement);
 customElements.define('pp-cardslot', CardSlotElement);
-customElements.define('pp-rowtracker', RowTrackerElement);
+customElements.define('pp-gamelanecollector', GameLaneCollectorElement);
 customElements.define('pp-gameboard', GameBoardElement);
 customElements.define('pp-game', GameElement);
 customElements.define('pp-deckbuilder', DeckBuilderElement);

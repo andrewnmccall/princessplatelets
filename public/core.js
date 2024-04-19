@@ -129,7 +129,7 @@ const cardTypeData = [
 		pawnRequirement: 1,
 		areas: [
 			[2, 1, 'pawn'],
-			[2, 2, 'pawn']
+			[3, 2, 'pawn']
 		]
 	},
 	{
@@ -166,9 +166,6 @@ const cardTypeData = [
 	// },
 ];
 const cardTypes = [
-	new CardType({ name: 'Pluto' }),
-	new CardType({ name: 'Mars' }),
-	new CardType({ name: 'Earth' })
 ];
 cardTypeData.forEach(item => cardTypes.push(new CardType(item)));
 
@@ -201,6 +198,11 @@ export class CardSlot extends EventEmitter {
 		return this.#pawnCount;
 	}
 
+	/** @return {Card} */
+	get card () {
+		return this.#card;
+	}
+
 	/** @return {Number|undefined} */
 	get player () {
 		return this.#player;
@@ -209,6 +211,9 @@ export class CardSlot extends EventEmitter {
 	change (pawnCountInc, player, card) {
 		this.#pawnCount = this.#pawnCount + pawnCountInc;
 		this.#player = player;
+		if (card || card === false) {
+			this.#card = card;
+		}
 		this.emit('change', {});
 	}
 
@@ -251,6 +256,27 @@ cardTypes.forEach(cardType => {
 	);
 });
 
+export class GameLaneCollector extends EventEmitter {
+	#points = 0;
+	#modifier = 0;
+	get points () { return this.#points; }
+	set points (val) {
+		this.#points = val;
+		this.emit('change');
+	}
+
+	get modifier () { return this.#modifier; }
+	set modifier (val) {
+		this.#modifier = val;
+		this.emit('change');
+	}
+
+	eventNames () {
+		return [
+			'change'
+		];
+	}
+}
 export class Game extends EventEmitter {
 	static EVENT_CARD_PLAYED = Symbol('card_played');
 	#cardSet1;
@@ -260,6 +286,10 @@ export class Game extends EventEmitter {
 		new Array(5),
 		new Array(5),
 		new Array(5)
+	];
+
+	/** @type {GameLaneCollector[][]} */
+	#collectors = [
 	];
 
 	constructor () {
@@ -272,6 +302,16 @@ export class Game extends EventEmitter {
 			this.#slots[row][3] = new CardSlot({ row, col: 3 });
 			this.#slots[row][4] = new CardSlot({ row, col: 4, pawnCount: 1, player: 2 });
 		}
+		this.#collectors[0] = [
+			new GameLaneCollector(),
+			new GameLaneCollector(),
+			new GameLaneCollector()
+		];
+		this.#collectors[1] = [
+			new GameLaneCollector(),
+			new GameLaneCollector(),
+			new GameLaneCollector()
+		];
 	}
 
 	get cardSet1 () {
@@ -289,6 +329,11 @@ export class Game extends EventEmitter {
 		return this.#slots[row][col];
 	}
 
+	/** @returns {GameLaneCollector} */
+	getGameLaneCollector (player, row) {
+		return this.#collectors[player][row];
+	}
+
 	/**
 	 * @fires Game#card_played
 	 * @param {Card} card
@@ -301,13 +346,15 @@ export class Game extends EventEmitter {
 		if (slot.pawnCount < card.cardType.pawnRequirement) {
 			return;
 		}
-		card.cardType.areas.forEach(([aRow, aCol, type]) => {
+		card.cardType.areas.forEach(([x, y, type]) => {
 			if (type === 'pawn') {
-				aRow = aRow - 2;
-				aCol = aCol - 2;
-				this.#slots[row + aRow]?.[col + aCol]?.change(1, 1);
+				x = x - 2;
+				y = y - 2;
+				this.#slots[row + y]?.[col + x]?.change(1, 1);
 			}
 		});
+		this.#slots[row]?.[col]?.change(0, 1, card);
+		this.#collectors[0][row].points += card.cardType.power;
 		/**
 		 * @event Game#card_played
 		 */
