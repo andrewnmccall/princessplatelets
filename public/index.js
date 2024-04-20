@@ -1,4 +1,4 @@
-import { CardSet, Card, Game, CardSlot, GameLaneCollector } from './core.js';
+import { CardSet, Card, Game, CardSlot, GameLaneCollector, PlayCardAction } from './core.js';
 
 /**
  *
@@ -39,11 +39,11 @@ class CardElement extends HTMLElement {
 		</table>
 		<svg xmlns="http://www.w3.org/2000/svg">
 			${arr5.map((v, row) => arr5.map((v2, col) => `
-					<rect
-						x="${5 + (col * step)}%"
-						y="${5 + (row * step)}%"
-						width="${cubeWidth}%"
-						height="${cubeWidth}%" />
+				<rect
+					x="${5 + (col * step)}%"
+					y="${5 + (row * step)}%"
+					width="${cubeWidth}%"
+					height="${cubeWidth}%" />
 			`)).flat().join('')}
 			<rect
 				class="center"
@@ -51,14 +51,14 @@ class CardElement extends HTMLElement {
 				y="${5 + (2 * step)}%"
 				width="${cubeWidth}%"
 				height="${cubeWidth}%" />
-			${value.cardType.areas.map(([col, row, type]) => `
+			${value.cardType.getAreas().map(([col, row, type]) => `
 				<rect
 					class="${type}"
 					x="${5 + (col * step)}%"
 					y="${5 + (row * step)}%"
 					width="${cubeWidth}%"
 					height="${cubeWidth}%" />
-		`).join('')}
+			`).join('')}
 		</svg>`;
 	}
 
@@ -193,7 +193,13 @@ class GameBoardElement extends HTMLElement {
 			if (evt.target instanceof CardSlotElement) {
 				const el = this.#gameElement.getSelectedCardEl();
 				if (el) {
-					this.#gameElement.game.placeCard(evt.target.row, evt.target.col, el.card);
+					const playCardAction = Object.assign(new PlayCardAction(), {
+						row: evt.target.row,
+						col: evt.target.col,
+						cardId: el.card.id
+					});
+					this.#gameElement.game.act(playCardAction);
+					// this.#gameElement.game.placeCard(evt.target.row, evt.target.col, el.card);
 					// evt.target.appendChild(el);
 				}
 			}

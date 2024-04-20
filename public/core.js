@@ -42,6 +42,10 @@ export class CardType extends EventEmitter {
 		super();
 		Object.assign(this, attrs);
 	}
+
+	getAreas (invertX = false, invertY = false) {
+		return this.areas;
+	}
 };
 
 const cardTypeData = [
@@ -145,6 +149,124 @@ const cardTypeData = [
 			target: 'ally',
 			power: '+1'
 		}
+	},
+	{
+		name: 'Parslemon',
+		power: 1,
+		pawnRequirement: 1,
+		areas: [
+			[2, 3, 'pawn'],
+			[3, 2, 'pawn']
+		],
+		effect: {
+			addCard: [
+				'Parslemon Seedling'
+			]
+		}
+	},
+	{
+		name: 'Eletrunky',
+		power: 4,
+		pawnRequirement: 2,
+		areas: [
+			[2, 1, 'pawn'],
+			[1, 2, 'pawn'],
+			[2, 3, 'pawn']
+		]
+	},
+	{
+		name: 'Spiny',
+		power: 1,
+		pawnRequirement: 1,
+		areas: [
+			[3, 2, 'pawn'],
+			[2, 3, 'pawn'],
+			[3, 4, 'affect']
+		]
+	},
+	{
+		name: 'Crab',
+		power: 1,
+		pawnRequirement: 1,
+		areas: [
+			[1, 2, 'pawn'],
+			[2, 1, 'pawn'],
+			[3, 2, 'pawn'],
+			[2, 1, 'affect']
+		],
+		effect: {
+			target: 'ally',
+			power: '+2'
+		}
+	},
+	{
+		name: 'Q',
+		power: 3,
+		pawnRequirement: 2,
+		areas: [
+			[2, 0, 'pawn'],
+			[3, 1, 'pawn'],
+			[3, 3, 'pawn'],
+			[2, 4, 'pawn']
+		]
+	},
+	{
+		name: 'Zu',
+		power: 2,
+		pawnRequirement: 2,
+		areas: [
+			[1, 1, 'pawn'],
+			[3, 1, 'pawn'],
+			[1, 3, 'pawn'],
+			[3, 3, 'pawn']
+		]
+	},
+	{
+		name: 'Biker',
+		power: 4,
+		pawnRequirement: 2,
+		areas: [
+			[0, 1, 'pawn'],
+			[0, 2, 'pawn'],
+			[1, 2, 'pawn'],
+			[0, 3, 'pawn']
+		]
+	},
+	{
+		name: 'Shouter',
+		power: 1,
+		pawnRequirement: 3,
+		areas: [
+			[1, 1, 'pawn'],
+			[1, 2, 'pawn'],
+			[1, 3, 'pawn'],
+			[2, 1, 'pawn'],
+			[2, 3, 'pawn'],
+			[3, 1, 'pawn'],
+			[3, 2, 'pawn'],
+			[3, 3, 'pawn']
+		]
+	},
+	{
+		name: 'Flan',
+		power: 2,
+		pawnRequirement: 1,
+		areas: [
+			[1, 1, 'pawn'],
+			[1, 2, 'pawn'],
+			[1, 3, 'pawn']
+		]
+	},
+	{
+		name: 'Floorer',
+		power: 2,
+		pawnRequirement: 1,
+		areas: [
+			[1, 1, 'pawn'],
+			[2, 1, 'pawn'],
+			[1, 3, 'pawn'],
+			[2, 3, 'pawn']
+		]
 	}
 	// {
 	// 	name: 'Name',
@@ -152,7 +274,6 @@ const cardTypeData = [
 	// 	pawnRequirement: 1,
 	// 	areas: [
 	// 		[2, 0, 'pawn'],
-	// 		[2, 4, 'pawn']
 	// 	]
 	// },
 	// {
@@ -247,6 +368,10 @@ export class CardSet extends EventEmitter {
 	onCardsChange (callback) {
 
 	}
+
+	getCardByID (id) {
+		return this.cards.find(card => card.id === id);
+	}
 };
 
 const source = new CardSet();
@@ -276,6 +401,18 @@ export class GameLaneCollector extends EventEmitter {
 			'change'
 		];
 	}
+}
+export class GameAgent extends EventEmitter {
+}
+export class GameAction {
+	/** @type {String} */ action = 'unknown';
+}
+export class PlayCardAction extends GameAction {
+	/** @type {String} */ action = 'play_card';
+	/** @type {Number} */ row = 0;
+	/** @type {Number} */ col = 0;
+	/** @type {String} */ playerId = '';
+	/** @type {String} */ cardId = '';
 }
 export class Game extends EventEmitter {
 	static EVENT_CARD_PLAYED = Symbol('card_played');
@@ -332,6 +469,16 @@ export class Game extends EventEmitter {
 	/** @returns {GameLaneCollector} */
 	getGameLaneCollector (player, row) {
 		return this.#collectors[player][row];
+	}
+
+	/**
+	 * @param {GameAction} gameAction
+	 */
+	act (gameAction) {
+		if (gameAction instanceof PlayCardAction) {
+			const card = this.#cardSet1.getCardByID(gameAction.cardId);
+			this.placeCard(gameAction.row, gameAction.col, card);
+		}
 	}
 
 	/**
