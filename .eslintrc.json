@@ -12,7 +12,7 @@
         "jsdoc"
     ],
     "rules": {
-        "indent": ["error", "tab"],
+        "indent": ["error", "tab", { "ignoredNodes": ["TemplateLiteral > *"] }],
         "no-tabs":"off",
         "semi": ["error", "always"],
         "jsdoc/no-undefined-types": 1,

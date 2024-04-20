@@ -73,7 +73,7 @@ const cardTypeData = [
 		power: 1,
 		pawnRequirement: 2,
 		areas: [
-			[2, 4, 'affect']
+			[4, 2, 'affect']
 		],
 		effect: {
 			target: 'enemy',

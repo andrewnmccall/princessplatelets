@@ -24,3 +24,19 @@ pp-cardslot {
 pp-gameboard {
 
 }
+svg {
+	width: 45%;
+	aspect-ratio: 1;
+	background-color: gray;
+	display: block;
+	margin: auto;
+}
+rect.center {
+	fill: white;
+}
+rect.pawn {
+	fill: yellow;
+}
+rect.affect {
+	stroke: red;
+}

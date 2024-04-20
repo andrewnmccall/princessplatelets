@@ -27,12 +27,39 @@ class CardElement extends HTMLElement {
 	set card (value) {
 		this.#card = value;
 		this.setAttribute('id', value.id);
+		const cubeWidth = 14;
+		const gap = 5;
+		const step = cubeWidth + gap;
+		const arr5 = [1, 2, 3, 4, 5];
 		this.innerHTML = `<table>
 			<tr><th>Name</th><td>${this.#card.cardType.name}</td><tr>
 			<tr><th>Power</th><td>${this.#card.cardType.power}</td><tr>
 			<tr><th>Replacer</th><td>${this.#card.cardType.replacer}</td><tr>
 			<tr><th>Pawn</th><td>${this.#card.cardType.pawnRequirement}</td><tr>
-		</table>`;
+		</table>
+		<svg xmlns="http://www.w3.org/2000/svg">
+			${arr5.map((v, row) => arr5.map((v2, col) => `
+					<rect
+						x="${5 + (col * step)}%"
+						y="${5 + (row * step)}%"
+						width="${cubeWidth}%"
+						height="${cubeWidth}%" />
+			`)).flat().join('')}
+			<rect
+				class="center"
+				x="${5 + (2 * step)}%"
+				y="${5 + (2 * step)}%"
+				width="${cubeWidth}%"
+				height="${cubeWidth}%" />
+			${value.cardType.areas.map(([col, row, type]) => `
+				<rect
+					class="${type}"
+					x="${5 + (col * step)}%"
+					y="${5 + (row * step)}%"
+					width="${cubeWidth}%"
+					height="${cubeWidth}%" />
+		`).join('')}
+		</svg>`;
 	}
 
 	get card () {
