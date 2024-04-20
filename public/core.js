@@ -15,6 +15,9 @@ export default class EventEmitter {
 
 	on (eventName, callback) {
 		if (this.eventNames().indexOf(eventName) < 0) {
+			if (typeof eventName === 'symbol') {
+				eventName = eventName.toString();
+			}
 			throw new Error('Unregistered event: ' + eventName);
 		}
 		this.#listeners[eventName] = this.#listeners[eventName] ?? [];
@@ -375,8 +378,12 @@ export class CardSet extends EventEmitter {
 };
 
 const source = new CardSet();
+const source2 = new CardSet();
 cardTypes.forEach(cardType => {
 	source.cards.push(
+		new Card({ cardType })
+	);
+	source2.cards.push(
 		new Card({ cardType })
 	);
 });
@@ -403,6 +410,36 @@ export class GameLaneCollector extends EventEmitter {
 	}
 }
 export class GameAgent extends EventEmitter {
+	/** @type {Game} */ #game;
+
+	constructor (
+		/** @type {Game} */ game,
+		/** @type {String} */ playerId
+	) {
+		super();
+		this.#game = game;
+		this.#game.on(Game.EVENT_ACTION, args => this.onGameAction(args));
+	}
+
+	onGameAction (
+		/** @type {GameAction} */ args
+	) {
+		if (args instanceof PlayCardAction) {
+			console.log('I can do something!');
+			if (args.playerId === 2) {
+				return;
+			}
+			const card = this.#game.cardSet2.cards[0];
+			const playCardAction = Object.assign(new PlayCardAction(), {
+				row: 0,
+				col: 4,
+				cardId: card.id,
+				playerId: 2
+			});
+			this.#game.act(playCardAction)
+				.then(action => console.log(action.success ? 'I can play it' : 'I can not play it'));
+		}
+	}
 }
 export class GameAction {
 	/** @type {String} */ action = 'unknown';
@@ -414,10 +451,24 @@ export class PlayCardAction extends GameAction {
 	/** @type {String} */ playerId = '';
 	/** @type {String} */ cardId = '';
 }
+
+export class GameActionResult {
+	/** @type {Boolean} */ success = true;
+	constructor (
+		/** @type {Boolean} */ success
+	) {
+		this.success = success;
+	}
+}
+
 export class Game extends EventEmitter {
-	static EVENT_CARD_PLAYED = Symbol('card_played');
-	#cardSet1;
-	#cardSet2;
+	/** @type {Symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
+	/** @type {Symbol} */ static EVENT_ACTION = Symbol('action');
+
+	/** @type {Card[]} */ #cards = [];
+	/** @type {CardSet} */ #cardSet1;
+	/** @type {CardSet} */ #cardSet2;
+	/** @type {GameAgent} */ #player2GameAgent;
 	/** @type {CardSlot[][]} */
 	#slots = [
 		new Array(5),
@@ -432,6 +483,11 @@ export class Game extends EventEmitter {
 	constructor () {
 		super();
 		this.#cardSet1 = source;
+		this.#cardSet2 = source2;
+		this.#cards = [
+			...this.#cardSet1.cards,
+			...this.#cardSet2.cards
+		];
 		for (let row = 0; row < 3; row++) {
 			this.#slots[row][0] = new CardSlot({ row, col: 0, pawnCount: 1, player: 1 });
 			this.#slots[row][1] = new CardSlot({ row, col: 1 });
@@ -449,6 +505,7 @@ export class Game extends EventEmitter {
 			new GameLaneCollector(),
 			new GameLaneCollector()
 		];
+		this.#player2GameAgent = new GameAgent(this, '1');
 	}
 
 	get cardSet1 () {
@@ -457,6 +514,10 @@ export class Game extends EventEmitter {
 
 	get cardSet2 () {
 		return this.#cardSet2;
+	}
+
+	getCardByID (/** @type {String} */ id) {
+		return this.#cards.find(card => card.id === id);
 	}
 
 	/**
@@ -473,25 +534,30 @@ export class Game extends EventEmitter {
 
 	/**
 	 * @param {GameAction} gameAction
+	 * @returns {Promise<GameActionResult>}
 	 */
 	act (gameAction) {
 		if (gameAction instanceof PlayCardAction) {
-			const card = this.#cardSet1.getCardByID(gameAction.cardId);
-			this.placeCard(gameAction.row, gameAction.col, card);
+			const card = this.#cards.find(card => card.id === gameAction.cardId);
+			if (this.placeCard(gameAction.row, gameAction.col, card, gameAction.playerId)) {
+				this.emit(Game.EVENT_ACTION, gameAction);
+				return Promise.resolve(new GameActionResult(true));
+			}
 		}
+		return Promise.resolve(new GameActionResult(false));
 	}
 
 	/**
 	 * @fires Game#card_played
 	 * @param {Card} card
 	 */
-	placeCard (row, col, card) {
+	placeCard (row, col, card, playerId) {
 		const slot = this.#slots[row][col];
-		if (slot.player !== 1) {
-			return;
+		if (slot.player !== playerId) {
+			return false;
 		}
 		if (slot.pawnCount < card.cardType.pawnRequirement) {
-			return;
+			return false;
 		}
 		card.cardType.areas.forEach(([x, y, type]) => {
 			if (type === 'pawn') {
@@ -510,11 +576,13 @@ export class Game extends EventEmitter {
 			col,
 			card
 		});
+		return true;
 	}
 
 	eventNames () {
 		return [
-			Game.EVENT_CARD_PLAYED
+			Game.EVENT_CARD_PLAYED,
+			Game.EVENT_ACTION
 		];
 	}
 };

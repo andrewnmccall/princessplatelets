@@ -165,8 +165,10 @@ class CardSlotElement extends HTMLElement {
 	}
 
 	build () {
-		if (this.#cardSlot.card) {
-			const cardEl = document.getElementById(this.#cardSlot.card.id);
+		/** @type {GameElement} el */
+		const gameElement = findParentElement(this, GameElement);
+		if (this.#cardSlot.card && gameElement) {
+			const cardEl = gameElement.getCardElementByID(this.#cardSlot.card.id);
 			this.replaceChildren(cardEl);
 			return;
 		}
@@ -190,17 +192,21 @@ class GameBoardElement extends HTMLElement {
 	constructor () {
 		super();
 		this.addEventListener('click', evt => {
-			if (evt.target instanceof CardSlotElement) {
+			const cardSlotElement = (evt.target instanceof CardSlotElement)
+				? evt.target
+				: findParentElement(evt.target, CardSlotElement);
+			if (cardSlotElement) {
 				const el = this.#gameElement.getSelectedCardEl();
 				if (el) {
 					const playCardAction = Object.assign(new PlayCardAction(), {
-						row: evt.target.row,
-						col: evt.target.col,
-						cardId: el.card.id
+						row: cardSlotElement.row,
+						col: cardSlotElement.col,
+						cardId: el.card.id,
+						playerId: 1
 					});
 					this.#gameElement.game.act(playCardAction);
-					// this.#gameElement.game.placeCard(evt.target.row, evt.target.col, el.card);
-					// evt.target.appendChild(el);
+					// this.#gameElement.game.placeCard(cardSlotElement.row, cardSlotElement.col, el.card);
+					// cardSlotElement.appendChild(el);
 				}
 			}
 		});
@@ -274,6 +280,18 @@ class GameElement extends HTMLElement {
 
 	get game () {
 		return this.#game;
+	}
+
+	/** @returns {CardElement} */
+	getCardElementByID (/** @type {String} */ id) {
+		const card = this.#game.getCardByID(id);
+		const out = document.getElementById(id);
+		if (out) {
+			return out;
+		}
+		const cardEl = new CardElement();
+		cardEl.card = card;
+		return cardEl;
 	}
 }
 
