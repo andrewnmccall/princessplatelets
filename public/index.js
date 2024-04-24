@@ -80,16 +80,25 @@ class DeckElement extends HTMLElement {
 		this.#cardSet.cards.forEach(card => {
 			const cardEl = new CardElement();
 			cardEl.card = card;
-			cardEl.setAttribute('draggable', 'true');
-			cardEl.addEventListener('click', evt => {
-				this.dispatchEvent(new Event('input'));
-				this.#cardEls.forEach(el => el.removeAttribute('selected'));
-				cardEl.setAttribute('selected', 'selected');
-				this.#selected = [cardEl];
-			});
-			this.#cardEls.push(cardEl);
-			this.append(cardEl);
+			this.addCard(cardEl);
 		});
+		this.#cardSet.on(CardSet.EVENT_CHANGED, evt => {
+			/** @type {GameElement} el */
+			const el = findParentElement(this, GameElement);
+			evt.added.forEach(card => this.addCard(el.getCardElementByID(card.id)));
+		});
+	}
+
+	addCard (cardEl) {
+		cardEl.setAttribute('draggable', 'true');
+		cardEl.addEventListener('click', evt => {
+			this.dispatchEvent(new Event('input'));
+			this.#cardEls.forEach(el => el.removeAttribute('selected'));
+			cardEl.setAttribute('selected', 'selected');
+			this.#selected = [cardEl];
+		});
+		this.#cardEls.push(cardEl);
+		this.append(cardEl);
 	}
 
 	/**
@@ -160,7 +169,7 @@ class CardSlotElement extends HTMLElement {
 		this.#row = r;
 		this.#col = c;
 		this.#cardSlot = s;
-		this.#cardSlot.on('change', () => this.build());
+		this.#cardSlot.on(CardSlot.EVENT_CHANGE, () => this.build());
 		this.build();
 	}
 
@@ -202,7 +211,7 @@ class GameBoardElement extends HTMLElement {
 						row: cardSlotElement.row,
 						col: cardSlotElement.col,
 						cardId: el.card.id,
-						playerId: 1
+						playerId: '1'
 					});
 					this.#gameElement.game.act(playCardAction);
 					// this.#gameElement.game.placeCard(cardSlotElement.row, cardSlotElement.col, el.card);
@@ -241,11 +250,18 @@ class GameBoardElement extends HTMLElement {
 	}
 }
 
+class GameLogElement extends HTMLElement {
+	constructor () {
+		super();
+		this.innerText = 'Bad Action.';
+	}
+}
 class GameElement extends HTMLElement {
 	#resetEl;
 	#board;
 	#hand1;
 	#hand2;
+	/** @type {GameLogElement} */ #log;
 	/** @type {Game} */
 	#game;
 	constructor () {
@@ -263,11 +279,18 @@ class GameElement extends HTMLElement {
 		this.append(this.#resetEl);
 
 		this.#resetEl.addEventListener('click', () => this.reset());
+		this.#log = new GameLogElement();
+		this.append(this.#log);
+
+		this.#hand2 = new DeckElement();
+		this.#hand2.cardSet = this.#game.hand2;
+		this.append(this.#hand2);
+
 		this.#board = new GameBoardElement();
 		this.append(this.#board);
 
 		this.#hand1 = new DeckElement();
-		this.#hand1.cardSet = this.#game.cardSet1;
+		this.#hand1.cardSet = this.#game.hand1;
 		this.append(this.#hand1);
 	}
 
@@ -353,5 +376,6 @@ customElements.define('pp-portfolio', PortfolioElement);
 customElements.define('pp-cardslot', CardSlotElement);
 customElements.define('pp-gamelanecollector', GameLaneCollectorElement);
 customElements.define('pp-gameboard', GameBoardElement);
+customElements.define('pp-gamelog', GameLogElement);
 customElements.define('pp-game', GameElement);
 customElements.define('pp-deckbuilder', DeckBuilderElement);

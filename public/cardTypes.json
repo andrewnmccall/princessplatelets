@@ -1,0 +1,221 @@
+[
+	{
+		"name": "Soldier",
+		"power": 1,
+		"pawnRequirement": 1,
+		"areas": [
+			[2, 1, "pawn"],
+			[1, 2, "pawn"],
+			[3, 2, "pawn"],
+			[2, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Guard",
+		"power": 3,
+		"pawnRequirement": 2,
+		"areas": [
+			[2, 0, "pawn"],
+			[2, 1, "pawn"],
+			[3, 2, "pawn"],
+			[2, 3, "pawn"],
+			[2, 4, "pawn"]
+		]
+	},
+	{
+		"name": "Ranger",
+		"power": 1,
+		"pawnRequirement": 2,
+		"areas": [
+			[4, 2, "affect"]
+		],
+		"effect": {
+			"target": "enemy",
+			"power": "-4"
+		}
+	},
+	{
+		"name": "Tank",
+		"power": 2,
+		"pawnRequirement": 2,
+		"areas": [
+			[2, 1, "pawn"],
+			[3, 1, "pawn"],
+			[2, 3, "pawn"],
+			[3, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Stinger",
+		"power": 1,
+		"pawnRequirement": 1,
+		"areas": [
+			[2, 0, "pawn"],
+			[2, 4, "pawn"]
+		]
+	},
+	{
+		"name": "Vermin",
+		"power": 2,
+		"pawnRequirement": 2,
+		"areas": [
+			[2, 3, "pawn"],
+			[3, 3, "pawn"],
+			[3, 3, "affect"]
+		],
+		"effect": {
+			"target": "all",
+			"power": "-3"
+		}
+	},
+	{
+		"name": "Ostrich",
+		"power": 2,
+		"pawnRequirement": 1,
+		"areas": [
+			[3, 2, "pawn"],
+			[2, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Wolf",
+		"power": 2,
+		"pawnRequirement": 1,
+		"areas": [
+			[2, 1, "pawn"],
+			[3, 2, "pawn"]
+		]
+	},
+	{
+		"name": "Chipmunk",
+		"power": 1,
+		"pawnRequirement": 2,
+		"areas": [
+			[3, 1, "pawn"],
+			[3, 2, "pawn"],
+			[2, 3, "affect"]
+		],
+		"effect": {
+			"target": "ally",
+			"power": "+1"
+		}
+	},
+	{
+		"name": "Parslemon",
+		"power": 1,
+		"pawnRequirement": 1,
+		"areas": [
+			[2, 3, "pawn"],
+			[3, 2, "pawn"]
+		],
+		"effect": {
+			"addCard": [
+				"Parslemon Seedling"
+			]
+		}
+	},
+	{
+		"name": "Eletrunky",
+		"power": 4,
+		"pawnRequirement": 2,
+		"areas": [
+			[2, 1, "pawn"],
+			[1, 2, "pawn"],
+			[2, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Spiny",
+		"power": 1,
+		"pawnRequirement": 1,
+		"areas": [
+			[3, 2, "pawn"],
+			[2, 3, "pawn"],
+			[3, 4, "affect"]
+		]
+	},
+	{
+		"name": "Crab",
+		"power": 1,
+		"pawnRequirement": 1,
+		"areas": [
+			[1, 2, "pawn"],
+			[2, 1, "pawn"],
+			[3, 2, "pawn"],
+			[2, 1, "affect"]
+		],
+		"effect": {
+			"target": "ally",
+			"power": "+2"
+		}
+	},
+	{
+		"name": "Q",
+		"power": 3,
+		"pawnRequirement": 2,
+		"areas": [
+			[2, 0, "pawn"],
+			[3, 1, "pawn"],
+			[3, 3, "pawn"],
+			[2, 4, "pawn"]
+		]
+	},
+	{
+		"name": "Zu",
+		"power": 2,
+		"pawnRequirement": 2,
+		"areas": [
+			[1, 1, "pawn"],
+			[3, 1, "pawn"],
+			[1, 3, "pawn"],
+			[3, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Biker",
+		"power": 4,
+		"pawnRequirement": 2,
+		"areas": [
+			[0, 1, "pawn"],
+			[0, 2, "pawn"],
+			[1, 2, "pawn"],
+			[0, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Shouter",
+		"power": 1,
+		"pawnRequirement": 3,
+		"areas": [
+			[1, 1, "pawn"],
+			[1, 2, "pawn"],
+			[1, 3, "pawn"],
+			[2, 1, "pawn"],
+			[2, 3, "pawn"],
+			[3, 1, "pawn"],
+			[3, 2, "pawn"],
+			[3, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Flan",
+		"power": 2,
+		"pawnRequirement": 1,
+		"areas": [
+			[1, 1, "pawn"],
+			[1, 2, "pawn"],
+			[1, 3, "pawn"]
+		]
+	},
+	{
+		"name": "Floorer",
+		"power": 2,
+		"pawnRequirement": 1,
+		"areas": [
+			[1, 1, "pawn"],
+			[2, 1, "pawn"],
+			[1, 3, "pawn"],
+			[2, 3, "pawn"]
+		]
+	}
+]
