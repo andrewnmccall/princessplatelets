@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint public",
+    "lintFix": "eslint --fix public",
+    "analyze": "npx tsc -p jsconfig.json"
   },
   "author": "",
   "license": "ISC",

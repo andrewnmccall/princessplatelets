@@ -1,27 +1,26 @@
 export default class EventEmitter {
-	/** @type {Object.<symbol, function[]} */
+	/** @type {Object.<symbol, Array<() => any>>} */
 	#listeners = {};
 
+	/** @returns {Symbol[]} */
 	eventNames () {
 		return [];
 	}
 
-	emit (eventName, args) {
+	/** @returns {undefined} */
+	emit (/** @type {symbol} */ eventName, /** @type {Object} */ args) {
 		if (this.eventNames().indexOf(eventName) < 0) {
-			if (typeof eventName === 'symbol') {
-				eventName = eventName.toString();
-			}
-			throw new Error('Unregistered event: ' + eventName);
+			const eventNameString = eventName.toString();
+			throw new Error('Unregistered event: ' + eventNameString);
 		}
-		this.#listeners[eventName]?.forEach(cb => cb(args));
+		this.#listeners[eventName]?.forEach((/** @type {Function} */ cb) => cb(args));
 	}
 
-	on (eventName, callback) {
+	/** @returns {undefined} */
+	on (/** @type {symbol} */ eventName, /** @type {Function} */ callback) {
 		if (this.eventNames().indexOf(eventName) < 0) {
-			if (typeof eventName === 'symbol') {
-				eventName = eventName.toString();
-			}
-			throw new Error('Unregistered event: ' + eventName);
+			const eventNameString = eventName.toString();
+			throw new Error('Unregistered event: ' + eventNameString);
 		}
 		this.#listeners[eventName] = this.#listeners[eventName] ?? [];
 		this.#listeners[eventName].push(callback);
@@ -34,20 +33,26 @@ export const ERROR_CODES = {
 	unknown_action: 'unknown_action',
 	not_player_controlled: 'not_player_controllled',
 	slot_occupied: 'slot_occupied',
-	insufficient_pawns: 'insufficient_pawns',
+	insufficient_pawns: 'insufficient_pawns'
 };
 
 // Create a class for the element
 export class CardType extends EventEmitter {
 	/** @type {string} */
-	name;
+	name = 'Unknown';
 	/** @type {boolean} */
 	replacer = false;
 	/** @type {number} */
 	power = 1;
 	/** @type {number} */
 	pawnRequirement = 1;
-	/** @type {[][]} */
+	/**
+	* @typedef {number} columnIndex
+	* @typedef {number} rowIndex
+	* @typedef {string} areaType
+	* @typedef {[columnIndex, rowIndex, areaType]} areaTuple
+	* @type {areaTuple[]}
+	*/
 	areas = [];
 	/** @type {Object|undefined} */
 	effect = undefined;
@@ -281,51 +286,54 @@ const cardTypeData = [
 			[2, 3, 'pawn']
 		]
 	}
-	// {
-	// 	name: 'Name',
-	// 	power: 1,
-	// 	pawnRequirement: 1,
-	// 	areas: [
-	// 		[2, 0, 'pawn'],
-	// 	]
-	// },
-	// {
-	// 	name: 'Name',
-	// 	power: 1,
-	// 	pawnRequirement: 1,
-	// 	areas: [
-	// 		[2, 0, 'pawn'],
-	// 		[2, 4, 'pawn']
-	// 	]
-	// },
 ];
-const cardTypes = [
+const /** @type {CardType[]} */ cardTypes = [
 ];
 cardTypeData.forEach(item => cardTypes.push(new CardType(item)));
 
 export class Card {
+	/** @type {String} */
 	id;
 	/** @type {CardType} */
 	cardType;
-	constructor (attrs = {}) {
-		this.id = attrs.id ?? crypto.randomUUID();
-		this.cardType = attrs.cardType;
+
+	/**
+	 * @param {Object} args
+	 * @param {String} [args.id]
+	 * @param {CardType} args.cardType
+	 */
+	constructor ({ id, cardType }) {
+		this.id = id ?? crypto.randomUUID();
+		this.cardType = cardType;
 	}
 };
 
 export class CardSlot extends EventEmitter {
-	/** @type {Symbol} */ static EVENT_CHANGE = Symbol('change');
-	#row;
-	#col;
-	#card;
-	#pawnCount = 0;
-	/** @type {String|undefined} */ #player = undefined;
-	constructor (attrs = {}) {
+	/** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
+	/** @type {Number} */ #row;
+	/** @type {Number} */ #col;
+	/** @type {?Card} */ #card = null;
+	/** @type {Number} */ #pawnCount = 0;
+	/** @type {?String} */ #player = null;
+
+	/**
+	 * @param {Object} args
+	 * @param {Number} args.row
+	 * @param {Number} args.col
+	 * @param {Number} [args.pawnCount]
+	 * @param {String} [args.player]
+	 */
+	constructor ({
+		row,
+		col,
+		pawnCount,
+		player
+	}) {
 		super();
-		this.#row = attrs.row;
-		this.#col = attrs.col;
-		this.#pawnCount = attrs.pawnCount ?? 0;
-		this.#player = attrs.player;
+		this.#row = row;
+		this.#col = col;
+		this.#pawnCount = pawnCount ?? 0;
+		this.#player = player ?? null;
 	}
 
 	/** @return {Number} */
@@ -333,25 +341,29 @@ export class CardSlot extends EventEmitter {
 		return this.#pawnCount;
 	}
 
-	/** @return {Card} */
+	/** @return {?Card} */
 	get card () {
 		return this.#card;
 	}
 
-	/** @return {String|undefined} */
+	/** @return ?{String} */
 	get player () {
 		return this.#player;
 	}
 
-	/** @return {String|undefined} */
+	/** @return {?String} */
 	get playerID () {
 		return this.#player;
 	}
 
-	get row() { return this.#row }
-	get col() { return this.#col }
+	get row () { return this.#row; }
+	get col () { return this.#col; }
 
-	change (pawnCountInc, player, card) {
+	change (
+		/** @type {Number} */ pawnCountInc,
+		/** @type {String} */player,
+		/** @type {?Card} */card
+	) {
 		this.#pawnCount = this.#pawnCount + pawnCountInc;
 		this.#player = player;
 		if (card || card === false) {
@@ -369,15 +381,15 @@ export class CardSlot extends EventEmitter {
 
 export class CardSet extends EventEmitter {
 	static EVENT_CHANGED = Symbol('changed');
-	id;
+
 	/** @type {Card[]} */
 	cards = [];
 
-	pushCard (card) {
+	pushCard (/** @type {Card} */ card) {
 
 	}
 
-	removeCard (card) {
+	removeCard (/** @type {Card} */ card) {
 		const idx = this.cards.indexOf(card);
 		this.card = this.cards.splice(idx, 1);
 		this.emit(CardSet.EVENT_CHANGED, {
@@ -387,11 +399,7 @@ export class CardSet extends EventEmitter {
 		});
 	}
 
-	onCardsChange (callback) {
-
-	}
-
-	getCardByID (id) {
+	getCardByID (/** @type {String} */ id) {
 		return this.cards.find(card => card.id === id);
 	}
 
@@ -414,23 +422,22 @@ export class CardSet extends EventEmitter {
 		});
 	}
 
-	shuffle() {
+	shuffle () {
 		const array = this.cards;
 		let currentIndex = array.length;
-	
+
 		// While there remain elements to shuffle...
-		while (currentIndex != 0) {
-	
+		while (currentIndex !== 0) {
 			// Pick a remaining element...
 			const randomIndex = Math.floor(Math.random() * currentIndex);
 			currentIndex--;
-	
+
 			// And swap it with the current element.
 			[array[currentIndex], array[randomIndex]] = [
 				array[randomIndex], array[currentIndex]];
 		}
 	}
-	
+
 	eventNames () {
 		return [
 			CardSet.EVENT_CHANGED
@@ -452,23 +459,24 @@ source.shuffle();
 source2.shuffle();
 
 export class GameLaneCollector extends EventEmitter {
+	static EVENT_CHANGED = Symbol('changed');
 	#points = 0;
 	#modifier = 0;
 	get points () { return this.#points; }
 	set points (val) {
 		this.#points = val;
-		this.emit('change');
+		this.emit(GameLaneCollector.EVENT_CHANGED);
 	}
 
 	get modifier () { return this.#modifier; }
 	set modifier (val) {
 		this.#modifier = val;
-		this.emit('change');
+		this.emit(GameLaneCollector.EVENT_CHANGED);
 	}
 
 	eventNames () {
 		return [
-			'change'
+			GameLaneCollector.EVENT_CHANGED
 		];
 	}
 }
@@ -483,7 +491,10 @@ export class GameAgent extends EventEmitter {
 		super();
 		this.#game = game;
 		this.#playerID = playerID;
-		this.#game.on(Game.EVENT_ACTION, args => this.onGameAction(args));
+		this.#game.on(
+			Game.EVENT_ACTION,
+			(/** @type {any} */ args) => this.onGameAction(args)
+		);
 	}
 
 	onGameAction (
@@ -496,9 +507,9 @@ export class GameAgent extends EventEmitter {
 			console.log('I can do something!');
 			const card = this.#game.hand2.cards.find(card => {
 				const slot = this.#game.getSlots().find(slot => {
-					return slot.playerID === this.#playerID
-						&& card.cardType.pawnRequirement <= slot.pawnCount
-						&& !slot.card;
+					return slot.playerID === this.#playerID &&
+						card.cardType.pawnRequirement <= slot.pawnCount &&
+						!slot.card;
 				});
 				if (!slot) {
 					return false;
@@ -544,7 +555,7 @@ export class PlayCardAction extends GameAction {
 
 export class GameActionResult {
 	/** @type {Boolean} */ success = true;
-	/** @type {String|undefined} */ errorCode = true;
+	/** @type {String|undefined} */ errorCode = undefined;
 	constructor (
 		/** @type {Boolean} */ success,
 		/** @type {String|undefined} */ errorCode = undefined
@@ -555,8 +566,8 @@ export class GameActionResult {
 }
 
 export class Game extends EventEmitter {
-	/** @type {Symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
-	/** @type {Symbol} */ static EVENT_ACTION = Symbol('action');
+	/** @type {symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
+	/** @type {symbol} */ static EVENT_ACTION = Symbol('action');
 
 	/** @type {Card[]} */ #cards = [];
 	/** @type {CardSet} */ #cardSet1;
@@ -572,11 +583,10 @@ export class Game extends EventEmitter {
 		new Array(5)
 	];
 
-	/** @type {GameLaneCollector[][]} */
-	#collectors = [
-	];
+	/** @type {Object<String, Array<GameLaneCollector>>} */
+	#collectors = {};
 
-	/** @type {Promise<CardTypes[]>} */ #cardTypesPromise;
+	/** @type {?Promise<CardType[]>} */ #cardTypesPromise = null;
 
 	constructor () {
 		super();
@@ -621,15 +631,16 @@ export class Game extends EventEmitter {
 		return this.#cardSet2;
 	}
 
-	/** @return {Promise<CardType>} */ getCardTypes () {
+	/** @return {Promise<CardType[]>} */ getCardTypes () {
 		if (this.#cardTypesPromise) {
 			return this.#cardTypesPromise;
 		}
 		this.#cardTypesPromise = fetch('http://localhost:8081/v1/cardTypes')
-			.then(res => res.json)
-			.then(data => {
-				this.#cardTypesPromise = Promise.resolve(data);
-				return data;
+			.then(res => res.json())
+			.then((/** @type {Array<any>} */ data) => {
+				const cardTypes = data.map(item => new CardType(item));
+				this.#cardTypesPromise = Promise.resolve(cardTypes);
+				return cardTypes;
 			});
 		return this.#cardTypesPromise;
 	}
@@ -643,7 +654,7 @@ export class Game extends EventEmitter {
 	/**
 	 * @return {CardSlot}
 	 */
-	getSlot (row, col) {
+	getSlot (/** @type {Number} */ row, /** @type {Number} */ col) {
 		return this.#slots[row][col];
 	}
 
@@ -652,7 +663,7 @@ export class Game extends EventEmitter {
 	}
 
 	/** @returns {GameLaneCollector} */
-	getGameLaneCollector (player, row) {
+	getGameLaneCollector (/** @type {String} */ player, /** @type {Number} */ row) {
 		return this.#collectors[player][row];
 	}
 
@@ -663,6 +674,9 @@ export class Game extends EventEmitter {
 	act (gameAction) {
 		if (gameAction instanceof PlayCardAction) {
 			const card = this.#cards.find(card => card.id === gameAction.cardId);
+			if (!card) {
+				return Promise.reject(new GameActionResult(false, ERROR_CODES.unknown_action));
+			}
 			const result = this.placeCard(gameAction.row, gameAction.col, card, gameAction.playerId);
 			if (!result) {
 				this.emit(Game.EVENT_ACTION, gameAction);
@@ -675,10 +689,14 @@ export class Game extends EventEmitter {
 
 	/**
 	 * @fires Game#card_played
-	 * @param {Card} card
 	 * @return {String|undefined} Returns an error message if fails. Nothing if successful.
 	 */
-	placeCard (row, col, card, playerId) {
+	placeCard (
+		/** @type {Number} */ row,
+		/** @type {Number} */ col,
+		/** @type {Card} */ card,
+		/** @type {String} */ playerId
+	) {
 		const slot = this.#slots[row][col];
 		if (playerId !== this.#actingPlayerID) {
 			return ERROR_CODES.slot_occupied;
@@ -699,7 +717,7 @@ export class Game extends EventEmitter {
 				this.#slots[row + y]?.[col + x]?.change(1, playerId);
 			}
 		});
-		this.#slots[row]?.[col]?.change(0, 1, card);
+		this.#slots[row]?.[col]?.change(0, '1', card);
 		this.#collectors[0][row].points += card.cardType.power;
 		/**
 		 * @event Game#card_played
@@ -716,7 +734,7 @@ export class Game extends EventEmitter {
 			this.#hand2.removeCard(card);
 			this.#hand2.append(this.#cardSet2.pop(1));
 		}
-		this.#actingPlayerID = this.#actingPlayerID === '1' ? '2' : '1'; 
+		this.#actingPlayerID = this.#actingPlayerID === '1' ? '2' : '1';
 		return undefined;
 	}
 

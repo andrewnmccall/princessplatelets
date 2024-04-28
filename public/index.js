@@ -1,9 +1,11 @@
 import { CardSet, Card, Game, CardSlot, GameLaneCollector, PlayCardAction } from './core.js';
 
 /**
+ * @template {HTMLElement} ElementClass
  *
  * @param {HTMLElement} element
- * @param {function(new:HTMLElement)} ElementClass
+ * @param {new() => ElementClass} ElementClass
+ * @returns {ElementClass=}
  */
 const findParentElement = function (element, ElementClass) {
 	if (!element.parentElement) {
@@ -16,26 +18,29 @@ const findParentElement = function (element, ElementClass) {
 };
 
 class CardElement extends HTMLElement {
-	/** @type {Card} */
+	/** @type {Card=} */
 	#card;
 	constructor () {
 		super();
 		this.innerHTML = '';
 	}
 
-	/** @param {Card} value */
+	/** @param {Card=} value */
 	set card (value) {
 		this.#card = value;
+		if (!value) {
+			return;
+		}
 		this.setAttribute('id', value.id);
 		const cubeWidth = 14;
 		const gap = 5;
 		const step = cubeWidth + gap;
 		const arr5 = [1, 2, 3, 4, 5];
 		this.innerHTML = `<table>
-			<tr><th>Name</th><td>${this.#card.cardType.name}</td><tr>
-			<tr><th>Power</th><td>${this.#card.cardType.power}</td><tr>
-			<tr><th>Replacer</th><td>${this.#card.cardType.replacer}</td><tr>
-			<tr><th>Pawn</th><td>${this.#card.cardType.pawnRequirement}</td><tr>
+			<tr><th>Name</th><td>${value.cardType.name}</td><tr>
+			<tr><th>Power</th><td>${value.cardType.power}</td><tr>
+			<tr><th>Replacer</th><td>${value.cardType.replacer}</td><tr>
+			<tr><th>Pawn</th><td>${value.cardType.pawnRequirement}</td><tr>
 		</table>
 		<svg xmlns="http://www.w3.org/2000/svg">
 			${arr5.map((v, row) => arr5.map((v2, col) => `
@@ -68,28 +73,35 @@ class CardElement extends HTMLElement {
 }
 
 class DeckElement extends HTMLElement {
-	/** @type {CardSet} */
-	#cardSet;
+	/** @type {?CardSet} */
+	#cardSet = null;
 	/** @type {CardElement[]} */
 	#cardEls = [];
+	/** @type {Boolean} */
 	#multiple = false;
+	/** @type {CardElement[]} */
 	#selected = [];
 
-	set cardSet (set) {
+	set cardSet (/** @type {?CardSet} */set) {
 		this.#cardSet = set;
+		if (!this.#cardSet) {
+			return;
+		}
 		this.#cardSet.cards.forEach(card => {
 			const cardEl = new CardElement();
 			cardEl.card = card;
 			this.addCard(cardEl);
 		});
-		this.#cardSet.on(CardSet.EVENT_CHANGED, evt => {
-			/** @type {GameElement} el */
+		this.#cardSet.on(CardSet.EVENT_CHANGED, (/** @type {any} */ evt) => {
 			const el = findParentElement(this, GameElement);
-			evt.added.forEach(card => this.addCard(el.getCardElementByID(card.id)));
+			if (!el) {
+				return;
+			}
+			evt.added.forEach((/** @type {Card} */ card) => this.addCard(el.getCardElementByID(card.id)));
 		});
 	}
 
-	addCard (cardEl) {
+	addCard (/** @type {CardElement} */ cardEl) {
 		cardEl.setAttribute('draggable', 'true');
 		cardEl.addEventListener('click', evt => {
 			this.dispatchEvent(new Event('input'));
@@ -109,7 +121,7 @@ class DeckElement extends HTMLElement {
 		return this.#selected[0];
 	}
 
-	set multiple (val) {
+	set multiple (/** @type {Boolean} */ val) {
 		this.#multiple = val;
 	}
 }
@@ -118,29 +130,34 @@ class PortfolioElement extends DeckElement {
 }
 
 class GameLaneCollectorElement extends HTMLElement {
-	#row = 0;
-	#player = 0;
-	/** @type {GameElement} */
-	#gameElement;
-	/** @type {Game} */
-	#game;
-	/** @type {GameLaneCollector} */
-	#gameLaneCollector;
-	constructor (props = {}, children = []) {
+	/** @type {Number} */ #row = 0;
+	/** @type {String} */ #player;
+	/** @type {?GameElement} */
+	#gameElement = null;
+	/** @type {?Game} */
+	#game = null;
+	/** @type {?GameLaneCollector} */
+	#gameLaneCollector = null;
+	/**
+	 * @param {Object} props
+	 * @param {Number} props.row
+	 * @param {String} props.player
+	 * @param {Array<String|HTMLElement>=} children
+	 */
+	constructor ({ row, player }, children = []) {
 		super();
-		this.#row = props.row;
-		this.#player = props.player;
+		this.#row = row;
+		this.#player = player;
 	}
 
 	build () {
 		this.innerHTML = `<table>
-			<tr><th>Points</th><td>${this.#gameLaneCollector.points}</td><tr>
-			<tr><th>Mod</th><td>${this.#gameLaneCollector.modifier}</td><tr>
+			<tr><th>Points</th><td>${this.#gameLaneCollector?.points}</td><tr>
+			<tr><th>Mod</th><td>${this.#gameLaneCollector?.modifier}</td><tr>
 		</table>`;
 	}
 
 	connectedCallback () {
-		/** @type {GameElement} el */
 		const el = findParentElement(this, GameElement);
 		if (el) {
 			this.#gameElement = el;
@@ -149,7 +166,7 @@ class GameLaneCollectorElement extends HTMLElement {
 				this.#player,
 				this.#row
 			);
-			this.#gameLaneCollector.on('change', () => this.build());
+			this.#gameLaneCollector.on(GameLaneCollector.EVENT_CHANGED, () => this.build());
 			// el.game.on(Game.EVENT_CARD_PLAYED, args => {
 			// 	const cardEl = document.getElementById(args.card.id);
 			// 	this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
@@ -162,20 +179,33 @@ class GameLaneCollectorElement extends HTMLElement {
 class CardSlotElement extends HTMLElement {
 	#row;
 	#col;
-	/** @type {CardSlot} */
+	/** @type {CardSlot=} */
 	#cardSlot;
-	constructor (r, c, s) {
+	/**
+	 * @typedef {Object} CardSlotElementArgs
+	 * @property {Number=} row
+	 * @property {Number=} column
+	 * @property {CardSlot=} slot
+	 * @param {CardSlotElementArgs=} props
+	 * @param {Array<String|HTMLElement>=} children
+	 */
+	constructor (
+		props,
+		children
+	) {
 		super();
-		this.#row = r;
-		this.#col = c;
-		this.#cardSlot = s;
-		this.#cardSlot.on(CardSlot.EVENT_CHANGE, () => this.build());
+		this.#row = props?.row;
+		this.#col = props?.column;
+		this.#cardSlot = props?.slot;
+		this.#cardSlot?.on(CardSlot.EVENT_CHANGE, () => this.build());
 		this.build();
 	}
 
 	build () {
-		/** @type {GameElement} el */
 		const gameElement = findParentElement(this, GameElement);
+		if (!this.#cardSlot) {
+			return;
+		}
 		if (this.#cardSlot.card && gameElement) {
 			const cardEl = gameElement.getCardElementByID(this.#cardSlot.card.id);
 			this.replaceChildren(cardEl);
@@ -194,19 +224,22 @@ class CardSlotElement extends HTMLElement {
 class GameBoardElement extends HTMLElement {
 	/** @type {HTMLDivElement[]} */
 	#rowEls = [];
-	/** @type {GameElement} */
+	/** @type {GameElement=} */
 	#gameElement;
-	/** @type {Game} */
+	/** @type {Game=} */
 	#game;
 	constructor () {
 		super();
 		this.addEventListener('click', evt => {
 			const cardSlotElement = (evt.target instanceof CardSlotElement)
 				? evt.target
-				: findParentElement(evt.target, CardSlotElement);
-			if (cardSlotElement) {
+				: (evt.target instanceof HTMLElement
+					? findParentElement(evt.target, CardSlotElement)
+					: undefined
+				);
+			if (cardSlotElement && this.#gameElement) {
 				const el = this.#gameElement.getSelectedCardEl();
-				if (el) {
+				if (el && el.card) {
 					const playCardAction = Object.assign(new PlayCardAction(), {
 						row: cardSlotElement.row,
 						col: cardSlotElement.col,
@@ -222,21 +255,23 @@ class GameBoardElement extends HTMLElement {
 	}
 
 	buildSlots () {
+		if (!this.#game) {
+			return;
+		}
 		this.#rowEls = [];
 		for (let i = 0; i < 3; i++) {
 			const el = this.ownerDocument.createElement('div');
-			el.append(new GameLaneCollectorElement({ row: i, player: 0 }));
+			el.append(new GameLaneCollectorElement({ row: i, player: '0' }));
 			for (let j = 0; j < 5; j++) {
-				el.append(new CardSlotElement(i, j, this.#game.getSlot(i, j)));
+				el.append(new CardSlotElement({ row: i, column: j, slot: this.#game.getSlot(i, j) }));
 			}
-			el.append(new GameLaneCollectorElement({ row: i, player: 1 }));
+			el.append(new GameLaneCollectorElement({ row: i, player: '1' }));
 			this.#rowEls.push(el);
 		}
 		this.replaceChildren(...this.#rowEls);
 	}
 
 	connectedCallback () {
-		/** @type {GameElement} el */
 		const el = findParentElement(this, GameElement);
 		if (el) {
 			this.#gameElement = el;
@@ -269,7 +304,7 @@ class GameElement extends HTMLElement {
 		this.#game = new Game();
 		this.#game.on(
 			Game.EVENT_CARD_PLAYED,
-			args => {
+			(/** @type {any} */ args) => {
 
 			}
 		);
@@ -309,7 +344,7 @@ class GameElement extends HTMLElement {
 	getCardElementByID (/** @type {String} */ id) {
 		const card = this.#game.getCardByID(id);
 		const out = document.getElementById(id);
-		if (out) {
+		if (out instanceof CardElement) {
 			return out;
 		}
 		const cardEl = new CardElement();
@@ -365,9 +400,9 @@ class DeckBuilderElement extends HTMLElement {
 		console.log('Custom element moved to new page.');
 	}
 
-	attributeChangedCallback (name, oldValue, newValue) {
-		console.log(`Attribute ${name} has changed.`);
-	}
+	// attributeChangedCallback (name, oldValue, newValue) {
+	// 	console.log(`Attribute ${name} has changed.`);
+	// }
 }
 
 customElements.define('pp-card', CardElement);
