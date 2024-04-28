@@ -487,7 +487,10 @@ export class GameAgent extends EventEmitter {
 	onGameAction (
 		/** @type {GameAction} */ args
 	) {
-		if (args instanceof PlayCardAction) {
+		if (
+			args instanceof PlayCardAction ||
+			args instanceof PassAction
+		) {
 			if (args.playerId === this.#playerID) {
 				return;
 			}
@@ -675,6 +678,11 @@ export class Game extends EventEmitter {
 	 * @returns {Promise<GameActionResult>}
 	 */
 	act (gameAction) {
+		if (gameAction instanceof PassAction) {
+			this.#actingPlayerID = this.#actingPlayerID === '1' ? '2' : '1';
+			this.emit(Game.EVENT_ACTION, gameAction);
+			return Promise.resolve(new GameActionResult(true));
+		}
 		if (gameAction instanceof PlayCardAction) {
 			const card = this.#cards.find(card => card.id === gameAction.cardId);
 			if (!card) {

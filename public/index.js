@@ -1,4 +1,4 @@
-import { CardSet, Card, Game, CardSlot, GameLaneCollector, PlayCardAction } from './core.js';
+import { CardSet, Card, Game, CardSlot, GameLaneCollector, PlayCardAction, PassAction } from './core.js';
 
 /**
  * @template {HTMLElement} ElementClass
@@ -364,6 +364,10 @@ class GameElement extends HTMLElement {
 	}
 
 	pass () {
+		const playCardAction = Object.assign(new PassAction(), {
+			playerId: '1'
+		});
+		this.#game.act(playCardAction);
 		console.log('Pass');
 	}
 
