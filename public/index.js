@@ -17,6 +17,26 @@ const findParentElement = function (element, ElementClass) {
 	return findParentElement(element.parentElement, ElementClass);
 };
 
+const registerEventListener = function (
+	/** @type {HTMLElement} */ el,
+	/** @type {String} */ eventType,
+	/** @type {String} */ selector,
+	/** @type {(evt: Event) => any} */ callback
+) {
+	el.addEventListener(
+		eventType,
+		selector === ''
+			? callback
+			: (evt) => {
+				if (evt.target instanceof HTMLElement) {
+					if (evt.target.closest(selector)) {
+						callback(evt);
+					}
+				}
+			}
+	);
+};
+
 class CardElement extends HTMLElement {
 	/** @type {Card=} */
 	#card;
@@ -132,12 +152,8 @@ class PortfolioElement extends DeckElement {
 class GameLaneCollectorElement extends HTMLElement {
 	/** @type {Number} */ #row = 0;
 	/** @type {String} */ #player;
-	/** @type {?GameElement} */
-	#gameElement = null;
-	/** @type {?Game} */
-	#game = null;
-	/** @type {?GameLaneCollector} */
-	#gameLaneCollector = null;
+	/** @type {?GameLaneCollector} */ #gameLaneCollector = null;
+
 	/**
 	 * @param {Object} props
 	 * @param {Number} props.row
@@ -160,17 +176,11 @@ class GameLaneCollectorElement extends HTMLElement {
 	connectedCallback () {
 		const el = findParentElement(this, GameElement);
 		if (el) {
-			this.#gameElement = el;
-			this.#game = el.game;
 			this.#gameLaneCollector = el.game.getGameLaneCollector(
 				this.#player,
 				this.#row
 			);
 			this.#gameLaneCollector.on(GameLaneCollector.EVENT_CHANGED, () => this.build());
-			// el.game.on(Game.EVENT_CARD_PLAYED, args => {
-			// 	const cardEl = document.getElementById(args.card.id);
-			// 	this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
-			// });
 			this.build();
 		}
 	}
@@ -179,8 +189,8 @@ class GameLaneCollectorElement extends HTMLElement {
 class CardSlotElement extends HTMLElement {
 	#row;
 	#col;
-	/** @type {CardSlot=} */
-	#cardSlot;
+	/** @type {CardSlot=} */ #cardSlot;
+
 	/**
 	 * @typedef {Object} CardSlotElementArgs
 	 * @property {Number=} row
@@ -228,6 +238,7 @@ class GameBoardElement extends HTMLElement {
 	#gameElement;
 	/** @type {Game=} */
 	#game;
+
 	constructor () {
 		super();
 		this.addEventListener('click', evt => {
@@ -292,13 +303,13 @@ class GameLogElement extends HTMLElement {
 	}
 }
 class GameElement extends HTMLElement {
-	#resetEl;
-	#board;
-	#hand1;
-	#hand2;
-	/** @type {GameLogElement} */ #log;
-	/** @type {Game} */
-	#game;
+	/** @type {HTMLButtonElement=} */ #resetEl = undefined;
+	/** @type {GameBoardElement=} */ #board = undefined;
+	/** @type {DeckElement=} */ #hand1 = undefined;
+	/** @type {DeckElement=} */ #hand2 = undefined;
+	/** @type {GameLogElement=} */ #log;
+	/** @type {Game} */ #game;
+
 	constructor () {
 		super();
 		this.#game = new Game();
@@ -308,32 +319,52 @@ class GameElement extends HTMLElement {
 
 			}
 		);
+		registerEventListener(this, 'click', '[data-game-action=reset]', () => this.reset());
+		registerEventListener(this, 'click', '[data-game-action=pass]', () => this.pass());
+		this.build();
+	}
 
+	build () {
+		this.innerHTML = '';
 		this.#resetEl = this.ownerDocument.createElement('button');
 		this.#resetEl.innerHTML = 'Reset';
-		this.append(this.#resetEl);
+		this.#resetEl.setAttribute('data-game-action', 'reset');
 
-		this.#resetEl.addEventListener('click', () => this.reset());
+		const passEl = this.ownerDocument.createElement('button');
+		passEl.innerHTML = 'Pass';
+		passEl.setAttribute('data-game-action', 'pass');
+
 		this.#log = new GameLogElement();
-		this.append(this.#log);
 
 		this.#hand2 = new DeckElement();
 		this.#hand2.cardSet = this.#game.hand2;
-		this.append(this.#hand2);
 
 		this.#board = new GameBoardElement();
-		this.append(this.#board);
 
 		this.#hand1 = new DeckElement();
 		this.#hand1.cardSet = this.#game.hand1;
-		this.append(this.#hand1);
+		this.replaceChildren(
+			this.#resetEl,
+			passEl,
+			this.#log,
+			this.#hand2,
+			this.#board,
+			this.#hand1
+		);
 	}
 
 	getSelectedCardEl () {
-		return this.#hand1.getSelectedCardEl();
+		return this.#hand1?.getSelectedCardEl();
 	}
 
 	reset () {
+		this.#game.reset();
+		this.build();
+		console.log('Reset');
+	}
+
+	pass () {
+		console.log('Pass');
 	}
 
 	get game () {

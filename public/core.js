@@ -445,19 +445,6 @@ export class CardSet extends EventEmitter {
 	}
 };
 
-const source = new CardSet();
-const source2 = new CardSet();
-cardTypes.forEach(cardType => {
-	source.cards.push(
-		new Card({ cardType })
-	);
-	source2.cards.push(
-		new Card({ cardType })
-	);
-});
-source.shuffle();
-source2.shuffle();
-
 export class GameLaneCollector extends EventEmitter {
 	static EVENT_CHANGED = Symbol('changed');
 	#points = 0;
@@ -570,12 +557,12 @@ export class Game extends EventEmitter {
 	/** @type {symbol} */ static EVENT_ACTION = Symbol('action');
 
 	/** @type {Card[]} */ #cards = [];
-	/** @type {CardSet} */ #cardSet1;
+	/** @type {CardSet=} */ #cardSet1;
 	/** @type {CardSet} */ #hand1 = new CardSet();
-	/** @type {CardSet} */ #cardSet2;
+	/** @type {CardSet=} */ #cardSet2;
 	/** @type {CardSet} */ #hand2 = new CardSet();
 	/** @type {String} */ #actingPlayerID = '1';
-	/** @type {GameAgent} */ #player2GameAgent;
+	/** @type {GameAgent=} */ #player2GameAgent;
 	/** @type {CardSlot[][]} */
 	#slots = [
 		new Array(5),
@@ -591,6 +578,22 @@ export class Game extends EventEmitter {
 	constructor () {
 		super();
 		this.getCardTypes();
+		this.reset();
+	}
+
+	reset () {
+		const source = new CardSet();
+		const source2 = new CardSet();
+		cardTypes.forEach(cardType => {
+			source.cards.push(
+				new Card({ cardType })
+			);
+			source2.cards.push(
+				new Card({ cardType })
+			);
+		});
+		source.shuffle();
+		source2.shuffle();
 		this.#cardSet1 = source;
 		this.#cardSet2 = source2;
 		this.#cards = [
@@ -698,6 +701,9 @@ export class Game extends EventEmitter {
 		/** @type {String} */ playerId
 	) {
 		const slot = this.#slots[row][col];
+		if (!this.#cardSet1 || !this.#cardSet2) {
+			return ERROR_CODES.slot_occupied;
+		}
 		if (playerId !== this.#actingPlayerID) {
 			return ERROR_CODES.slot_occupied;
 		}
