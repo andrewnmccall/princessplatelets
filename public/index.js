@@ -1,4 +1,7 @@
-import { CardSet, Card, Game, CardSlot, GameLaneCollector, PlayCardAction, PassAction } from './core.js';
+import {
+	CardSet, Card, Game, CardSlot, GameLaneCollector,
+	PlayCardAction, PassAction, GameLogCollection, GameLog, RerollAction, GamePhases
+} from './core.js';
 
 /**
  * @template {HTMLElement} ElementClass
@@ -17,6 +20,8 @@ const findParentElement = function (element, ElementClass) {
 	return findParentElement(element.parentElement, ElementClass);
 };
 
+const ifElse = (cond = true, trueCB = () => '', falseCB = () => '') => cond ? trueCB() : falseCB();
+
 const registerEventListener = function (
 	/** @type {HTMLElement} */ el,
 	/** @type {String} */ eventType,
@@ -28,7 +33,7 @@ const registerEventListener = function (
 		selector === ''
 			? callback
 			: (evt) => {
-				if (evt.target instanceof HTMLElement) {
+				if (evt.target instanceof Element) {
 					if (evt.target.closest(selector)) {
 						callback(evt);
 					}
@@ -40,9 +45,15 @@ const registerEventListener = function (
 class CardElement extends HTMLElement {
 	/** @type {Card=} */
 	#card;
-	constructor () {
+
+	/**
+	 * @param {Object} props
+	 * @param {Card=} props.card
+	 * @param {Array<String|HTMLElement>=} children
+	 */
+	constructor ({ card } = { card: undefined }, children = undefined) {
 		super();
-		this.innerHTML = '';
+		this.card = card;
 	}
 
 	/** @param {Card=} value */
@@ -56,12 +67,31 @@ class CardElement extends HTMLElement {
 		const gap = 5;
 		const step = cubeWidth + gap;
 		const arr5 = [1, 2, 3, 4, 5];
-		this.innerHTML = `<table>
-			<tr><th>Name</th><td>${value.cardType.name}</td><tr>
-			<tr><th>Power</th><td>${value.cardType.power}</td><tr>
-			<tr><th>Replacer</th><td>${value.cardType.replacer}</td><tr>
-			<tr><th>Pawn</th><td>${value.cardType.pawnRequirement}</td><tr>
-		</table>
+		this.innerHTML = `<div>
+			<div data-prop="cardType.name">${value.cardType.name}</div>
+			<div data-prop="cardType.power">${value.cardType.power}</div>
+			${ifElse(value.cardType.replacer,
+				() => '<div data-prop="cardType.replacer"></div>',
+				() => `<div data-prop="cardType.pawnRequirement">${value.cardType.pawnRequirement}</div>`
+			)}
+			${ifElse(!!value.cardType.effect, () => `
+			<div data-prop="cardType.effect">
+				${ifElse(!!value.cardType.effect?.target,
+					() => `<div data-prop="cardType.effect.target" data-prop-value="${value.cardType.effect?.target}"></div>`
+				)}
+				${ifElse(!!value.cardType.effect?.power,
+					() => `<div data-prop="cardType.effect.power"  data-prop-value="${value.cardType.effect?.power}">
+						${value.cardType.effect?.power}
+					</div>`
+				)}
+				${ifElse(!!value.cardType.effect?.addCards,
+					() => `<div data-prop="cardType.effect.addCards">
+						${value.cardType.effect?.addCards?.length}
+					</div>`
+				)}
+			</div>
+			`)}
+		</div>
 		<svg xmlns="http://www.w3.org/2000/svg">
 			${arr5.map((v, row) => arr5.map((v2, col) => `
 				<rect
@@ -76,7 +106,7 @@ class CardElement extends HTMLElement {
 				y="${5 + (2 * step)}%"
 				width="${cubeWidth}%"
 				height="${cubeWidth}%" />
-			${value.cardType.getAreas().map(([col, row, type]) => `
+			${value.areas.map(([col, row, type]) => `
 				<rect
 					class="${type}"
 					x="${5 + (col * step)}%"
@@ -98,7 +128,7 @@ class DeckElement extends HTMLElement {
 	/** @type {CardElement[]} */
 	#cardEls = [];
 	/** @type {Boolean} */
-	#multiple = false;
+	#multiple = true;
 	/** @type {CardElement[]} */
 	#selected = [];
 
@@ -107,28 +137,44 @@ class DeckElement extends HTMLElement {
 		if (!this.#cardSet) {
 			return;
 		}
-		this.#cardSet.cards.forEach(card => {
-			const cardEl = new CardElement();
-			cardEl.card = card;
-			this.addCard(cardEl);
-		});
+		this.#cardSet.cards.forEach(card => this.addCard(new CardElement({ card })));
 		this.#cardSet.on(CardSet.EVENT_CHANGED, (/** @type {any} */ evt) => {
 			const el = findParentElement(this, GameElement);
 			if (!el) {
 				return;
 			}
 			evt.added.forEach((/** @type {Card} */ card) => this.addCard(el.getCardElementByID(card.id)));
+			evt.removed.forEach((/** @type {Card} */ card) => {
+				try {
+					this.removeChild(el.getCardElementByID(card.id));
+				} catch (ex) {
+
+				}
+			});
+		});
+		registerEventListener(this, 'click', 'pp-card', evt => {
+			const cardEl = evt.target instanceof Element ? evt.target.closest('pp-card') : undefined;
+			if (cardEl instanceof CardElement) {
+				this.dispatchEvent(new Event('input'));
+				if (this.#multiple) {
+					if (cardEl.getAttribute('selected')) {
+						cardEl.removeAttribute('selected');
+						this.#selected = this.#selected.filter(item => item !== cardEl);
+					} else {
+						cardEl.setAttribute('selected', 'selected');
+						this.#selected.push(cardEl);
+					}
+				} else {
+					this.#cardEls.forEach(el => el.removeAttribute('selected'));
+					cardEl.setAttribute('selected', 'selected');
+					this.#selected = [cardEl];
+				}
+			}
 		});
 	}
 
 	addCard (/** @type {CardElement} */ cardEl) {
 		cardEl.setAttribute('draggable', 'true');
-		cardEl.addEventListener('click', evt => {
-			this.dispatchEvent(new Event('input'));
-			this.#cardEls.forEach(el => el.removeAttribute('selected'));
-			cardEl.setAttribute('selected', 'selected');
-			this.#selected = [cardEl];
-		});
 		this.#cardEls.push(cardEl);
 		this.append(cardEl);
 	}
@@ -139,6 +185,30 @@ class DeckElement extends HTMLElement {
 	 */
 	getSelectedCardEl () {
 		return this.#selected[0];
+	}
+
+	reroll () {
+		const playCardAction = Object.assign(new RerollAction(), {
+			cardIds: this.#selected
+				.filter(cardEl => !!cardEl.card)
+				.map(cardEl => cardEl.card?.id),
+			playerId: '1'
+		});
+		findParentElement(this, GameElement)?.game.act(playCardAction);
+	}
+
+	connectedCallback () {
+		this.bindOnGameEvents();
+	}
+
+	bindOnGameEvents () {
+		const game = findParentElement(this, GameElement)?.game;
+		game?.on(
+			Game.EVENT_ACTION,
+			(/** @type {any} */ args) => {
+				this.#multiple = game.phase === GamePhases.REROLL;
+			}
+		);
 	}
 
 	set multiple (/** @type {Boolean} */ val) {
@@ -221,10 +291,21 @@ class CardSlotElement extends HTMLElement {
 			this.replaceChildren(cardEl);
 			return;
 		}
+		this.#cardSlot.player === undefined
+			? this.removeAttribute('player')
+			: this.setAttribute('player', this.#cardSlot.player || '');
+		this.#cardSlot.player === '1'
+			? this.setAttribute('sessionplayer', 'sessionplayer')
+			: this.removeAttribute('sessionplayer');
+		this.setAttribute('pawnCount', '' + this.#cardSlot.pawnCount);
+		const effects = this.#cardSlot.getEffects();
 		this.innerHTML = `<table>
 			<tr><th>Player</th><td>${this.#cardSlot.player ?? ''}</td><tr>
 			<tr><th>Pawns</th><td>${this.#cardSlot.pawnCount}</td><tr>
-		</table>`;
+		</table>
+		${ifElse(!!effects.length,
+			() => '<i class="fa-solid fa-star"></i>'
+		)}`;
 	}
 
 	get row () { return this.#row; }
@@ -272,11 +353,11 @@ class GameBoardElement extends HTMLElement {
 		this.#rowEls = [];
 		for (let i = 0; i < 3; i++) {
 			const el = this.ownerDocument.createElement('div');
-			el.append(new GameLaneCollectorElement({ row: i, player: '0' }));
+			el.append(new GameLaneCollectorElement({ row: i, player: '1' }));
 			for (let j = 0; j < 5; j++) {
 				el.append(new CardSlotElement({ row: i, column: j, slot: this.#game.getSlot(i, j) }));
 			}
-			el.append(new GameLaneCollectorElement({ row: i, player: '1' }));
+			el.append(new GameLaneCollectorElement({ row: i, player: '2' }));
 			this.#rowEls.push(el);
 		}
 		this.replaceChildren(...this.#rowEls);
@@ -287,22 +368,34 @@ class GameBoardElement extends HTMLElement {
 		if (el) {
 			this.#gameElement = el;
 			this.#game = el.game;
-			// el.game.on(Game.EVENT_CARD_PLAYED, args => {
-			// 	const cardEl = document.getElementById(args.card.id);
-			// 	this.#rowEls[args.row].children.item(args.col + 1).replaceChildren(cardEl);
-			// });
 			this.buildSlots();
 		}
 	}
 }
 
 class GameLogElement extends HTMLElement {
-	constructor () {
+	/**
+	 * @typedef {Object} GameLogElementArgs
+	 * @property {GameLogCollection=} log
+	 * @param {GameLogElementArgs=} props
+	 * @param {Array<String|HTMLElement>=} children
+	 */
+	constructor (props, children) {
 		super();
+		if (props?.log) {
+			props?.log.on(GameLogCollection.EVENT_APPEND, (/** @type {Object} */ args) => {
+				if (args?.item instanceof GameLog) {
+					const div = this.ownerDocument.createElement('div');
+					div.innerText = args.item.message;
+					this.prepend(div);
+				}
+			});
+		}
 		this.innerText = 'Bad Action.';
 	}
 }
 class GameElement extends HTMLElement {
+	/** @type {HTMLDivElement=} */ #phaseEl = undefined;
 	/** @type {HTMLButtonElement=} */ #resetEl = undefined;
 	/** @type {GameBoardElement=} */ #board = undefined;
 	/** @type {DeckElement=} */ #hand1 = undefined;
@@ -314,18 +407,23 @@ class GameElement extends HTMLElement {
 		super();
 		this.#game = new Game();
 		this.#game.on(
-			Game.EVENT_CARD_PLAYED,
+			Game.EVENT_ACTION,
 			(/** @type {any} */ args) => {
-
+				if (this.#phaseEl) {
+					this.#phaseEl.innerText = 'Phase: ' + this.#game.phase;
+				}
 			}
 		);
 		registerEventListener(this, 'click', '[data-game-action=reset]', () => this.reset());
 		registerEventListener(this, 'click', '[data-game-action=pass]', () => this.pass());
+		registerEventListener(this, 'click', '[data-game-action=reroll]', () => this.reroll());
 		this.build();
 	}
 
 	build () {
 		this.innerHTML = '';
+		this.#phaseEl = this.ownerDocument.createElement('div');
+		this.#phaseEl.innerText = 'Phase: ' + this.#game.phase;
 		this.#resetEl = this.ownerDocument.createElement('button');
 		this.#resetEl.innerHTML = 'Reset';
 		this.#resetEl.setAttribute('data-game-action', 'reset');
@@ -334,10 +432,16 @@ class GameElement extends HTMLElement {
 		passEl.innerHTML = 'Pass';
 		passEl.setAttribute('data-game-action', 'pass');
 
-		this.#log = new GameLogElement();
+		const rerollEl = this.ownerDocument.createElement('button');
+		rerollEl.innerHTML = 'Reroll';
+		rerollEl.setAttribute('data-game-action', 'reroll');
 
-		this.#hand2 = new DeckElement();
-		this.#hand2.cardSet = this.#game.hand2;
+		this.#log = new GameLogElement({
+			log: this.#game.log
+		});
+
+		// this.#hand2 = new DeckElement();
+		// this.#hand2.cardSet = this.#game.hand2;
 
 		this.#board = new GameBoardElement();
 
@@ -346,8 +450,10 @@ class GameElement extends HTMLElement {
 		this.replaceChildren(
 			this.#resetEl,
 			passEl,
+			rerollEl,
+			this.#phaseEl,
 			this.#log,
-			this.#hand2,
+			// this.#hand2,
 			this.#board,
 			this.#hand1
 		);
@@ -361,6 +467,10 @@ class GameElement extends HTMLElement {
 		this.#game.reset();
 		this.build();
 		console.log('Reset');
+	}
+
+	reroll () {
+		this.#hand1?.reroll();
 	}
 
 	pass () {

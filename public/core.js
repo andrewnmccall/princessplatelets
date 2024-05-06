@@ -36,7 +36,27 @@ export const ERROR_CODES = {
 	insufficient_pawns: 'insufficient_pawns'
 };
 
-// Create a class for the element
+/**
+ * @enum {string}
+ */
+export const CardEffectTarget = {
+	ALL: 'all',
+	ALLY: 'ally',
+	ENEMY: 'enemy'
+};
+
+/**
+ * @enum {string}
+ */
+export const CardAreaType = {
+	PAWN: 'pawn',
+	AFFECT: 'affect'
+};
+export class CardEffect {
+	/** @type {CardEffectTarget=} */ target;
+	/** @type {number=} */ power;
+	/** @type {string[]=} */ addCards;
+}
 export class CardType extends EventEmitter {
 	/** @type {string} */
 	name = 'Unknown';
@@ -49,19 +69,27 @@ export class CardType extends EventEmitter {
 	/**
 	* @typedef {number} columnIndex
 	* @typedef {number} rowIndex
-	* @typedef {string} areaType
-	* @typedef {[columnIndex, rowIndex, areaType]} areaTuple
-	* @type {areaTuple[]}
+	* @typedef {CardAreaType} areaType
+	* @typedef {[columnIndex, rowIndex, areaType]} AreaTuple
+	* @type {AreaTuple[]}
 	*/
 	areas = [];
-	/** @type {Object|undefined} */
+	/** @type {CardEffect|undefined} */
 	effect = undefined;
 	constructor (attrs = {}) {
 		super();
 		Object.assign(this, attrs);
 	}
 
+	/** @returns {AreaTuple[]} */
 	getAreas (invertX = false, invertY = false) {
+		if (invertX || invertY) {
+			return this.areas.map(areaTuple => [
+				invertX ? -1 * (areaTuple[0] - 4) : areaTuple[0],
+				invertY ? -1 * (areaTuple[1] - 4) : areaTuple[1],
+				areaTuple[2]
+			]);
+		}
 		return this.areas;
 	}
 };
@@ -99,7 +127,7 @@ const cardTypeData = [
 		],
 		effect: {
 			target: 'enemy',
-			power: '-4'
+			power: -4
 		}
 	},
 	{
@@ -133,7 +161,7 @@ const cardTypeData = [
 		],
 		effect: {
 			target: 'all',
-			power: '-3'
+			power: -3
 		}
 	},
 	{
@@ -165,7 +193,7 @@ const cardTypeData = [
 		],
 		effect: {
 			target: 'ally',
-			power: '+1'
+			power: 1
 		}
 	},
 	{
@@ -177,7 +205,7 @@ const cardTypeData = [
 			[3, 2, 'pawn']
 		],
 		effect: {
-			addCard: [
+			addCards: [
 				'Parslemon Seedling'
 			]
 		}
@@ -214,7 +242,7 @@ const cardTypeData = [
 		],
 		effect: {
 			target: 'ally',
-			power: '+2'
+			power: 2
 		}
 	},
 	{
@@ -297,14 +325,24 @@ export class Card {
 	/** @type {CardType} */
 	cardType;
 
+	/** @type {Boolean} */ invertX = false;
+
 	/**
 	 * @param {Object} args
 	 * @param {String} [args.id]
+	 * @param {Boolean} [args.invertX=false]
 	 * @param {CardType} args.cardType
 	 */
-	constructor ({ id, cardType }) {
+	constructor ({ id, cardType, invertX = false }) {
 		this.id = id ?? crypto.randomUUID();
+		this.invertX = invertX;
 		this.cardType = cardType;
+	}
+
+	get areas () {
+		return this.cardType.getAreas(
+			this.invertX
+		);
 	}
 };
 
@@ -312,9 +350,10 @@ export class CardSlot extends EventEmitter {
 	/** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
 	/** @type {Number} */ #row;
 	/** @type {Number} */ #col;
-	/** @type {?Card} */ #card = null;
+	/** @type {Card=} */ #card;
 	/** @type {Number} */ #pawnCount = 0;
-	/** @type {?String} */ #player = null;
+	/** @type {String=} */ #player;
+	/** @type {Object.<String, Object.<String, CardEffect>>} */ #effects = {};
 
 	/**
 	 * @param {Object} args
@@ -333,7 +372,7 @@ export class CardSlot extends EventEmitter {
 		this.#row = row;
 		this.#col = col;
 		this.#pawnCount = pawnCount ?? 0;
-		this.#player = player ?? null;
+		this.#player = player;
 	}
 
 	/** @return {Number} */
@@ -341,7 +380,7 @@ export class CardSlot extends EventEmitter {
 		return this.#pawnCount;
 	}
 
-	/** @return {?Card} */
+	/** @return {Card=} */
 	get card () {
 		return this.#card;
 	}
@@ -351,7 +390,7 @@ export class CardSlot extends EventEmitter {
 		return this.#player;
 	}
 
-	/** @return {?String} */
+	/** @return {String=} */
 	get playerID () {
 		return this.#player;
 	}
@@ -370,6 +409,24 @@ export class CardSlot extends EventEmitter {
 			this.#card = card;
 		}
 		this.emit(CardSlot.EVENT_CHANGE, {});
+	}
+
+	addEffects (
+		/** @type {String} */playerId,
+		/** @type {Card} */card
+	) {
+		this.#effects[playerId] = this.#effects[playerId] || {};
+		this.#effects[playerId][card.id] = this.#effects[playerId][card.id] || [];
+		this.#effects[playerId][card.id].push(card.cardType.effect);
+		this.emit(CardSlot.EVENT_CHANGE, {});
+	}
+
+	/** @returns {CardEffect[]} */
+	getEffects (/** @type {string=} */ playerId) {
+		if (playerId) {
+			return Object.values(this.#effects[playerId] || {});
+		}
+		return Object.values(this.#effects).map(idEffectMap => Object.values(idEffectMap)).flat();
 	}
 
 	eventNames () {
@@ -413,6 +470,20 @@ export class CardSet extends EventEmitter {
 		return out;
 	}
 
+	addDelete (
+		/** @type {Card[]} */ add,
+		/** @type {Card[]} */ drop
+	) {
+		const added = add.filter(card => !this.cards.some(card2 => card.id === card2.id));
+		this.cards = this.cards.filter(card => !drop.some(card2 => card.id === card2.id));
+		this.cards.push(...added);
+		this.emit(CardSet.EVENT_CHANGED, {
+			removed: drop,
+			added,
+			set: this
+		});
+	}
+
 	append (/** @type {Card[]} */ cards) {
 		this.cards.push(...cards);
 		this.emit(CardSet.EVENT_CHANGED, {
@@ -444,6 +515,28 @@ export class CardSet extends EventEmitter {
 		];
 	}
 };
+
+export class GameLog {
+	/** @type {String} */ message = '';
+	constructor (/** @type {GameLog} */ args) {
+		this.message = args.message;
+	}
+}
+
+export class GameLogCollection extends EventEmitter {
+	static EVENT_APPEND = Symbol('append');
+	/** @type {GameLog[]} */ #logs = [];
+	append (/** @type {GameLog} */ log) {
+		this.#logs.push(log);
+		this.emit(GameLogCollection.EVENT_APPEND, { item: log });
+	}
+
+	eventNames () {
+		return [
+			GameLogCollection.EVENT_APPEND
+		];
+	}
+}
 
 export class GameLaneCollector extends EventEmitter {
 	static EVENT_CHANGED = Symbol('changed');
@@ -542,6 +635,11 @@ export class PlayCardAction extends GameAction {
 	/** @type {String} */ playerId = '';
 	/** @type {String} */ cardId = '';
 }
+export class RerollAction extends GameAction {
+	/** @type {String} */ action = 'reroll';
+	/** @type {String} */ playerId = '';
+	/** @type {String[]} */ cardIds = [];
+}
 
 export class GameActionResult {
 	/** @type {Boolean} */ success = true;
@@ -555,6 +653,18 @@ export class GameActionResult {
 	}
 }
 
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const GamePhases = {
+	/** The true value */
+	REROLL: 'REROLL',
+	PLAYER_1_TURN: 'PLAYER_1_TURN',
+	PLAYER_2_TURN: 'PLAYER_2_TURN',
+	COMPLETE: 'COMPLETE'
+};
+
 export class Game extends EventEmitter {
 	/** @type {symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
 	/** @type {symbol} */ static EVENT_ACTION = Symbol('action');
@@ -566,6 +676,9 @@ export class Game extends EventEmitter {
 	/** @type {CardSet} */ #hand2 = new CardSet();
 	/** @type {String} */ #actingPlayerID = '1';
 	/** @type {GameAgent=} */ #player2GameAgent;
+	/** @type {GameLogCollection=} */ #log;
+	/** @type {GameAction[]} */ #actions = [];
+	/** @type {GamePhases} */ #phase = GamePhases.REROLL;
 	/** @type {CardSlot[][]} */
 	#slots = [
 		new Array(5),
@@ -573,7 +686,7 @@ export class Game extends EventEmitter {
 		new Array(5)
 	];
 
-	/** @type {Object<String, Array<GameLaneCollector>>} */
+	/** @type {Object.<string, GameLaneCollector[]>} */
 	#collectors = {};
 
 	/** @type {?Promise<CardType[]>} */ #cardTypesPromise = null;
@@ -587,16 +700,19 @@ export class Game extends EventEmitter {
 	reset () {
 		const source = new CardSet();
 		const source2 = new CardSet();
+		this.#phase = GamePhases.REROLL;
 		cardTypes.forEach(cardType => {
 			source.cards.push(
 				new Card({ cardType })
 			);
 			source2.cards.push(
-				new Card({ cardType })
+				new Card({ cardType, invertX: true })
 			);
 		});
 		source.shuffle();
 		source2.shuffle();
+		this.#actions = [];
+		this.#log = new GameLogCollection();
 		this.#cardSet1 = source;
 		this.#cardSet2 = source2;
 		this.#cards = [
@@ -612,12 +728,12 @@ export class Game extends EventEmitter {
 			this.#slots[row][3] = new CardSlot({ row, col: 3 });
 			this.#slots[row][4] = new CardSlot({ row, col: 4, pawnCount: 1, player: '2' });
 		}
-		this.#collectors[0] = [
+		this.#collectors['1'] = [
 			new GameLaneCollector(),
 			new GameLaneCollector(),
 			new GameLaneCollector()
 		];
-		this.#collectors[1] = [
+		this.#collectors['2'] = [
 			new GameLaneCollector(),
 			new GameLaneCollector(),
 			new GameLaneCollector()
@@ -629,9 +745,11 @@ export class Game extends EventEmitter {
 		return this.#cardSet1;
 	}
 
+	get phase () { return this.#phase; }
 	get hand1 () { return this.#hand1; }
 
 	get hand2 () { return this.#hand2; }
+	get log () { return this.#log; }
 
 	get cardSet2 () {
 		return this.#cardSet2;
@@ -678,8 +796,31 @@ export class Game extends EventEmitter {
 	 * @returns {Promise<GameActionResult>}
 	 */
 	act (gameAction) {
+		if (gameAction instanceof RerollAction) {
+			const removeCards = gameAction.cardIds
+				.map(cardId => this.#hand1.getCardByID(cardId))
+				.filter(card => card instanceof Card);
+			this.#hand1.addDelete(
+				this.#cardSet1?.pop(gameAction.cardIds.length) || [],
+				removeCards
+			);
+			this.#phase = GamePhases.PLAYER_1_TURN;
+			this.emit(Game.EVENT_ACTION, gameAction);
+			return Promise.resolve(new GameActionResult(true));
+		}
 		if (gameAction instanceof PassAction) {
 			this.#actingPlayerID = this.#actingPlayerID === '1' ? '2' : '1';
+			this.#actions.push(gameAction);
+			this.#log?.append(new GameLog({
+				message: 'Player pass'
+			}));
+			if (
+				this.#actions.at(-1) instanceof PassAction &&
+				this.#actions.at(-2) instanceof PassAction
+			) {
+				this.finalizeGame();
+				return Promise.resolve(new GameActionResult(true));
+			}
 			this.emit(Game.EVENT_ACTION, gameAction);
 			return Promise.resolve(new GameActionResult(true));
 		}
@@ -690,12 +831,22 @@ export class Game extends EventEmitter {
 			}
 			const result = this.placeCard(gameAction.row, gameAction.col, card, gameAction.playerId);
 			if (!result) {
+				this.#actions.push(gameAction);
+				this.#log?.append(new GameLog({
+					message: 'Player card played'
+				}));
 				this.emit(Game.EVENT_ACTION, gameAction);
 				return Promise.resolve(new GameActionResult(true));
 			}
 			return Promise.reject(new GameActionResult(false, result));
 		}
 		return Promise.reject(new GameActionResult(false, ERROR_CODES.unknown_action));
+	}
+
+	finalizeGame () {
+		this.#log?.append(new GameLog({
+			message: 'Game Complete'
+		}));
 	}
 
 	/**
@@ -724,15 +875,19 @@ export class Game extends EventEmitter {
 		if (slot.pawnCount < card.cardType.pawnRequirement) {
 			return ERROR_CODES.insufficient_pawns;
 		}
-		card.cardType.areas.forEach(([x, y, type]) => {
-			if (type === 'pawn') {
-				x = x - 2;
-				y = y - 2;
+		card.areas.forEach(([x, y, type]) => {
+			x = x - 2;
+			y = y - 2;
+			if (type === CardAreaType.PAWN) {
 				this.#slots[row + y]?.[col + x]?.change(1, playerId);
 			}
+			if (type === CardAreaType.AFFECT) {
+				this.#slots[row + y]?.[col + x]?.addEffects(playerId, card);
+			}
 		});
-		this.#slots[row]?.[col]?.change(0, '1', card);
-		this.#collectors[0][row].points += card.cardType.power;
+		this.#slots[row]?.[col]?.change(0, playerId, card);
+		const collector = this.#collectors[playerId][row];
+		collector.points += card.cardType.power;
 		/**
 		 * @event Game#card_played
 		 */

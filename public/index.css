@@ -1,3 +1,8 @@
+:root {
+	--pp-z-layer-ui: 1;
+}
+
+
 pp-deck, pp-portfolio {
 	display:block;
 }
@@ -10,6 +15,7 @@ pp-deck pp-card {
 }
 pp-gamelanecollector{
 	border: solid 1px black;
+	background-color: #eeeeee;
 	display: inline-block;
 	height: 10rem;
 	aspect-ratio: 4 / 7;
@@ -20,6 +26,16 @@ pp-cardslot {
 	display: inline-block;
 	height: 10rem;
 	aspect-ratio: 5 / 7;
+	&[player] {
+		background-color: #f1d2d2;;
+	}
+	&[player][sessionplayer] {
+		background-color: #d2eed2;
+	}
+	i {
+		display: inline;
+		position: absolute;
+	}
 }
 pp-gameboard {
 
@@ -32,6 +48,7 @@ pp-card {
 		display: block;
 		margin: auto;
 	}
+	background-color: #eeeeee;
 	rect.center {
 		fill: white;
 	}
@@ -41,6 +58,93 @@ pp-card {
 	rect.affect {
 		stroke: red;
 	}
+	& > div {
+		display: table;
+		width: 100%;
+		height: 60%;
+	}
+	[data-prop="cardType.name"] {
+		font-weight: bold;
+		text-align: center;
+		margin: 0 0.25rem;
+		border-bottom: solid 1px;
+	}
+	[data-prop="cardType.pawnRequirement"],
+	[data-prop="cardType.power"],
+	[data-prop="cardType.replacer"] {
+		display: inline-block;
+		width: 50%;
+		text-align: center;
+	}
+	[data-prop="cardType.pawnRequirement"]::before,
+	[data-prop="cardType.power"]::before,
+	[data-prop="cardType.replacer"]::before {
+		display: inline-block;
+		text-rendering: auto;
+		-webkit-font-smoothing: antialiased;
+		font-weight: 900;
+		font: var(--fa-font-solid);
+	}
+	[data-prop="cardType.pawnRequirement"]::before {
+		content: '\f443';
+	}
+	[data-prop="cardType.power"]::before {
+		content: '\f6de';
+	}
+	[data-prop="cardType.replacer"]::before {
+		/* angles-down */
+		content: '\f103';
+	}
+	[data-prop="cardType.replacer"]::before {
+		content: '\f0c5';
+	}
+	
+	[data-prop="cardType.effect"] {
+		background-color: #cccccc;
+		text-align: center;
+		margin: 0.25rem 0;
+		&::before {
+			visibility: visible;
+			display: inline-block;
+			text-rendering: auto;
+			-webkit-font-smoothing: antialiased;
+			font-weight: 900;
+			font: var(--fa-font-solid);
+			content: '\f005';
+		}
+		&> div {
+			display: inline-block
+		}
+		[data-prop="cardType.effect.addCards"]:before {
+			visibility: visible;
+			display: inline-block;
+			text-rendering: auto;
+			-webkit-font-smoothing: antialiased;
+			font-weight: 900;
+			font: var(--fa-font-solid);
+			/* copy */
+			content: '\f0c5';
+		}
+		[data-prop="cardType.effect.target"] {
+			visibility: hidden;
+			&::before {
+				visibility: visible;
+				display: inline-block;
+				text-rendering: auto;
+				-webkit-font-smoothing: antialiased;
+				font-weight: 900;
+				font: var(--fa-font-solid);
+			}
+			&[data-prop-value="ally"]::before {
+				/* Face smile */
+				content: '\f118';
+			}
+			&[data-prop-value="enemy"]::before {
+				/* Face smile */
+				content: '\f556';
+			}
+		}
+	}
 }
 
 pp-gamelog {
@@ -49,4 +153,13 @@ pp-gamelog {
 	left: 50%;
 	margin: auto;
 	transform: translatex(-50%);
+	height: 1rem;
+	overflow-y: clip;
+	background-color: grey;
+	z-index: var(--pp-z-layer-ui);
+	&:hover {
+		overflow-y: auto;
+		height: auto;
+		background-color: grey;
+	}
 }
