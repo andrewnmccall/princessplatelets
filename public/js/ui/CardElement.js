@@ -8,6 +8,7 @@ import {
 export default class CardElement extends HTMLElement {
 	/** @type {Card=} */
 	#card;
+	/** @type {ElementInternals} */ #internals;
 
 	/**
 	 * @param {Object} props
@@ -16,23 +17,41 @@ export default class CardElement extends HTMLElement {
 	 */
 	constructor ({ card } = { card: undefined }, children = undefined) {
 		super();
+		this.#internals = this.attachInternals();
 		this.card = card;
 	}
 
 	/** @param {Card=} value */
 	set card (value) {
 		this.#card = value;
+		this.#card?.on(Card.EVENT_CHANGE, () => this.build());
+		this.build();
+	}
+
+	build () {
+		const value = this.#card;
 		if (!value) {
 			return;
 		}
 		this.setAttribute('id', value.id);
+		const powerAugment = value.powerAugment;
+		if (powerAugment > 0) {
+			this.#internals.states.add('--enhanced');
+		} else {
+			this.#internals.states.delete('--enhanced');
+		}
+		if (powerAugment < 0) {
+			this.#internals.states.add('--enfeebled');
+		} else {
+			this.#internals.states.delete('--enfeebled');
+		}
 		const cubeWidth = 14;
 		const gap = 5;
 		const step = cubeWidth + gap;
 		const arr5 = [1, 2, 3, 4, 5];
 		this.innerHTML = `<div>
 			<div data-prop="cardType.name">${value.cardType.name}</div>
-			<div data-prop="cardType.power">${value.cardType.power}</div>
+			<div data-prop="cardType.power">${value.power}</div>
 			${ifElse(value.cardType.replacer,
 				() => '<div data-prop="cardType.replacer"></div>',
 				() => `<div data-prop="cardType.pawnRequirement">${value.cardType.pawnRequirement}</div>`

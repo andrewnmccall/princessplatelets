@@ -10,10 +10,10 @@ import GameElement from './ui/GameElement.js';
 
 customElements.define('pp-card', CardElement);
 customElements.define('pp-deck', DeckElement);
+customElements.define('pp-deckbuilder', DeckBuilderElement);
 customElements.define('pp-portfolio', PortfolioElement);
 customElements.define('pp-cardslot', CardSlotElement);
 customElements.define('pp-gamelanecollector', GameLaneCollectorElement);
 customElements.define('pp-gameboard', GameBoardElement);
 customElements.define('pp-gamelog', GameLogElement);
 customElements.define('pp-game', GameElement);
-customElements.define('pp-deckbuilder', DeckBuilderElement);

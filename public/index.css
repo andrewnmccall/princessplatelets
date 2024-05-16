@@ -17,14 +17,14 @@ pp-gamelanecollector{
 	border: solid 1px black;
 	background-color: #eeeeee;
 	display: inline-block;
-	height: 10rem;
+	height: 10.5rem;
 	aspect-ratio: 4 / 7;
 }
 pp-card,
 pp-cardslot {
 	border: solid 1px black;
 	display: inline-block;
-	height: 10rem;
+	height: 10.5rem;
 	aspect-ratio: 5 / 7;
 	&[player] {
 		background-color: #f1d2d2;;
@@ -38,9 +38,22 @@ pp-cardslot {
 	}
 }
 pp-gameboard {
-
+	div {
+		display:flex;
+	}
+	pp-slot {
+		position: relative;
+	}
+	pp-card {
+		position:relative;
+		display: block;
+		/* height: 100%; */
+		top: 50%; left: 50%;
+		transform: translate(-50%,-50%);
+	}
 }
 pp-card {
+	height: 10rem;
 	svg {
 		width: 45%;
 		aspect-ratio: 1;
@@ -145,6 +158,14 @@ pp-card {
 			}
 		}
 	}
+}
+
+
+pp-card:is(:--enhanced, :state(--enhanced)) {
+	background-color: #d2eed2;
+}
+pp-card:is(:--enfeebled, :state(--enfeebled)) {
+	background-color: #f1d2d2;
 }
 
 pp-gamelog {

@@ -1,44 +1,80 @@
-import CardElement from './CardElement.js';
+import { Card, CardSet, cardTypes } from '../core.js';
+import CardElementProvider from './CardElementProvider.js';
 import DeckElement from './DeckElement.js';
-import PortfolioElement from './PortfolioElement.js';
+import { createElement as ce, registerEventListener } from './utils.js';
 
 export default class DeckBuilderElement extends HTMLElement {
-	#deckElement;
-	#portfolioElement;
-	static observedAttributes = [
-		'deck-id',
-		'deck-selector',
-		'potfolio-id',
-		'potfolio-selector'
-	];
+	/** @type {DeckElement=} */ #targetDeckEl;
+	/** @type {DeckElement=} */ #sourceDeckEl;
+	// static observedAttributes = [
+	// 	'deck-id',
+	// 	'deck-selector',
+	// 	'potfolio-id',
+	// 	'potfolio-selector'
+	// ];
 
 	constructor () {
 		super();
-		console.log(this.childNodes);
-		this.#deckElement = new DeckElement();
-		this.append(this.#deckElement);
-
-		this.#portfolioElement = new PortfolioElement();
-		// this.#portfolioElement.cardSet = source;
-		this.append(this.#portfolioElement);
-		this.addEventListener('click', evt => this.onClick(evt));
+		const tagName = customElements.getName(DeckElement);
+		if (!tagName) {
+			throw new Error('DeckElement must be a registered custom element');
+		}
+		registerEventListener(this, 'change', tagName, evt => {
+			if (evt.target === this.#sourceDeckEl) {
+				this.#sourceDeckEl.selectedCards.forEach(cardEl => {
+					if (!cardEl.card) {
+						return;
+					}
+					this.#targetDeckEl?.cardSet?.append([cardEl.card]);
+					this.#sourceDeckEl?.cardSet?.removeCard(cardEl.card);
+				});
+			}
+			console.log(evt);
+		});
 	}
 
-	/** @param {Event} evt  */
-	onClick (evt) {
-		if (evt.target instanceof CardElement) {
-			if (this.#deckElement.contains(evt.target)) {
-				evt.target.remove();
+	build () {
+		const target = new CardSet();
+		const source = new CardSet();
+		/** @type {Object.<String, Number>} */
+		const cardTypeCount = {
+			soldier: 2,
+			ostrich: 2,
+			wolf: 2
+		};
+		cardTypes.forEach(cardType => {
+			for (let i = 0; i < (cardTypeCount[cardType.key] || 1); i++) {
+				source.cards.push(
+					new Card({ cardType })
+				);
 			}
-			if (this.#portfolioElement.contains(evt.target)) {
-				this.#deckElement.append(evt.target);
-			}
-			console.log(evt.target);
-		}
+		});
+		const cardElementProvider = new CardElementProvider();
+		this.#targetDeckEl = new DeckElement({ cardSet: target, cardElementProvider });
+		this.#sourceDeckEl = new DeckElement({ cardSet: source, cardElementProvider });
+		const deckBuilderEl = ce('div', {}, [
+			ce('div', {}, [
+				ce('label', {}, [
+					'Name: ',
+					ce('input', { type: 'text' })
+				])
+			]),
+			ce('div', {}, [
+				ce('h2', {}, 'Deck'),
+				this.#targetDeckEl
+			]),
+			ce('div', {}, [
+				ce('h2', {}, 'Card Library'),
+				this.#sourceDeckEl
+			])
+		]);
+		this.append(
+			deckBuilderEl
+		);
 	}
 
 	connectedCallback () {
-		console.log('Custom element added to page.');
+		this.build();
 	}
 
 	disconnectedCallback () {

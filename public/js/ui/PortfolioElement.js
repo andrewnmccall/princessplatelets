@@ -1,9 +1,17 @@
+import DeckBuilderElement from './DeckBuilderElement.js';
+import { createElement as ce } from './utils.js';
+
 export default class PortfolioElement extends HTMLElement {
 	build () {
-		this.innerHTML = `<ol>
-			<li>Deck 1</li>
-			<li>Deck 2</li>
-		</ol>`;
+		const listEl = ce('ol', {}, [
+			ce('li', {}, 'Deck 1'),
+			ce('li', {}, 'Deck 2')
+		]);
+		const deckBuilderEl = new DeckBuilderElement();
+		this.append(
+			listEl,
+			deckBuilderEl
+		);
 	}
 
 	connectedCallback () {

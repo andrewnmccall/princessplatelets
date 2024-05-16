@@ -8,8 +8,8 @@ import CardElement from './CardElement.js';
 import CardElementProvider from './CardElementProvider.js';
 
 export default class DeckElement extends HTMLElement {
-	/** @type {?CardSet} */
-	#cardSet = null;
+	/** @type {CardSet=} */
+	#cardSet;
 	/** @type {CardElement[]} */
 	#cardEls = [];
 	/** @type {Game=} */ #game;
@@ -19,29 +19,22 @@ export default class DeckElement extends HTMLElement {
 	/** @type {CardElement[]} */
 	#selected = [];
 
-	set game (/** @type {Game} */set) { this.#game = set; }
-	set cardElementProvider (/** @type {CardElementProvider} */set) { this.#cardElementProvider = set; }
+	/** @type {Card=} */
+	#card;
 
-	set cardSet (/** @type {?CardSet} */set) {
-		this.#cardSet = set;
-		if (!this.#cardSet) {
-			return;
-		}
-		this.#cardSet.cards.forEach(card => this.addCard(new CardElement({ card })));
-		this.#cardSet.on(CardSet.EVENT_CHANGED, (/** @type {any} */ evt) => {
-			const cep = this.#cardElementProvider;
-			if (!cep) {
-				return;
-			}
-			evt.added.forEach((/** @type {Card} */ card) => this.addCard(cep.getCardElementByID(card.id)));
-			evt.removed.forEach((/** @type {Card} */ card) => {
-				try {
-					this.removeChild(cep.getCardElementByID(card.id));
-				} catch (ex) {
-
-				}
-			});
-		});
+	/**
+	 * @param {Object} props
+	 * @param {CardSet=} props.cardSet
+	 * @param {CardElementProvider=} props.cardElementProvider
+	 * @param {Array<String|HTMLElement>=} children
+	 */
+	constructor (
+		{ cardSet, cardElementProvider } = {},
+		children = undefined
+	) {
+		super();
+		this.cardElementProvider = cardElementProvider || new CardElementProvider();
+		this.cardSet = cardSet;
 		registerEventListener(this, 'click', 'pp-card', evt => {
 			const cardEl = evt.target instanceof Element ? evt.target.closest('pp-card') : undefined;
 			if (cardEl instanceof CardElement) {
@@ -59,7 +52,37 @@ export default class DeckElement extends HTMLElement {
 					cardEl.setAttribute('selected', 'selected');
 					this.#selected = [cardEl];
 				}
+				this.dispatchEvent(new Event('change', { bubbles: true }));
 			}
+		});
+	}
+
+	get selectedCards () { return [...this.#selected]; }
+	get cardSet () { return this.#cardSet; }
+
+	set game (/** @type {Game} */set) { this.#game = set; }
+	set cardElementProvider (/** @type {CardElementProvider} */set) { this.#cardElementProvider = set; }
+
+	set cardSet (/** @type {CardSet=} */set) {
+		this.#cardSet = set;
+		if (!this.#cardSet) {
+			return;
+		}
+		this.#cardSet.cards.forEach(card => this.addCard(new CardElement({ card })));
+		this.#cardSet.on(CardSet.EVENT_CHANGED, (/** @type {any} */ evt) => {
+			const cep = this.#cardElementProvider;
+			if (!cep) {
+				return;
+			}
+			evt.added.forEach((/** @type {Card} */ card) => this.addCard(cep.getCardElementByID(card.id)));
+			evt.removed.forEach((/** @type {Card} */ card) => {
+				this.#selected = this.#selected.filter(selCard => selCard.card?.id !== card.id);
+				try {
+					this.removeChild(cep.getCardElementByID(card.id));
+				} catch (ex) {
+
+				}
+			});
 		});
 	}
 

@@ -36,3 +36,53 @@ export const registerEventListener = function (
 			}
 	);
 };
+
+/**
+ * @returns {PropertyDescriptor=}
+ */
+const getPropertyDescriptor = function (
+	/** @type {object} */ obj,
+	/** @type {string} */ prop
+) {
+	const out = Object.getOwnPropertyDescriptor(obj, prop);
+	if (out) {
+		return out;
+	}
+	const proto = Object.getPrototypeOf(obj);
+	if (proto) {
+		return getPropertyDescriptor(proto, prop);
+	}
+	return undefined;
+};
+/**
+ * @returns {Element}
+ */
+export const createElement = function (
+	/** @type {(typeof Element)|String} */ Tag,
+	/** @type {Object=} */ props = {},
+	/** @type {String|Element|Array.<String|Element>=} */ children = []
+) {
+	/** @type {any|Element} */
+	let out;
+	if (typeof Tag === 'function') {
+		out = new Tag();
+	} else {
+		out = document.createElement(Tag);
+	}
+	Object.entries(props).forEach(([k, v]) => {
+		const pD = getPropertyDescriptor(out, k);
+		if (pD) {
+			out[k] = v;
+		} else if (out instanceof Element) {
+			out.setAttribute(k, v);
+		}
+	});
+	if (typeof out.append === 'function') {
+		if (children.constructor === Array) {
+			out.append(...children);
+		} else {
+			out.append(children);
+		}
+	}
+	return out;
+};
