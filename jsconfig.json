@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "module": "esnext",
+    "module": "NodeNext",
     "strict": true,
     "checkJs": true,
-    "target": "esnext"
+    "target": "esnext",
+    "moduleResolution": "NodeNext"
   },
   "include": [
     "public",
