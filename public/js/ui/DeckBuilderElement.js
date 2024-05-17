@@ -1,4 +1,6 @@
-import { Card, CardSet, cardTypes } from '../core.js';
+import { cardTypes } from '../core.js';
+import { Card } from '../core/Card.js';
+import { CardSet } from '../core/CardSet.js';
 import CardElementProvider from './CardElementProvider.js';
 import DeckElement from './DeckElement.js';
 import { createElement as ce, registerEventListener } from './utils.js';
