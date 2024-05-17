@@ -2,14 +2,13 @@ import { Game } from './Game.js';
 import EventEmitter from './EventEmitter.js';
 import { PlayCardAction, PassAction, GameAction } from '../core.js';
 
-
 export class GameAgent extends EventEmitter {
-    /** @type {Game} */ #game;
-    /** @type {string} */ #playerID;
+	/** @type {Game} */ #game;
+	/** @type {string} */ #playerID;
 
-	constructor(
-    /** @type {Game} */ game,
-        /** @type {string} */ playerID
+	constructor (
+		/** @type {Game} */ game,
+		/** @type {string} */ playerID
 	) {
 		super();
 		this.#game = game;
@@ -20,8 +19,8 @@ export class GameAgent extends EventEmitter {
 		);
 	}
 
-	onGameAction(
-    /** @type {GameAction} */ args
+	onGameAction (
+		/** @type {GameAction} */ args
 	) {
 		if (args instanceof PlayCardAction ||
 			args instanceof PassAction) {

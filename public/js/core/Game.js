@@ -6,21 +6,20 @@ import { CardSet } from './CardSet.js';
 import { GameLaneCollector } from './GameLaneCollector.js';
 import { GameAgent } from './GameAgent.js';
 
-
 export class Game extends EventEmitter {
-    /** @type {symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
-    /** @type {symbol} */ static EVENT_ACTION = Symbol('action');
+	/** @type {symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
+	/** @type {symbol} */ static EVENT_ACTION = Symbol('action');
 
-    /** @type {Card[]} */ #cards = [];
-    /** @type {CardSet=} */ #cardSet1;
-    /** @type {CardSet} */ #hand1 = new CardSet();
-    /** @type {CardSet=} */ #cardSet2;
-    /** @type {CardSet} */ #hand2 = new CardSet();
-    /** @type {string} */ #actingPlayerID = '1';
-    /** @type {GameAgent=} */ #player2GameAgent;
-    /** @type {GameLogCollection=} */ #log;
-    /** @type {GameAction[]} */ #actions = [];
-    /** @type {GamePhases} */ #phase = GamePhases.REROLL;
+	/** @type {Card[]} */ #cards = [];
+	/** @type {CardSet=} */ #cardSet1;
+	/** @type {CardSet} */ #hand1 = new CardSet();
+	/** @type {CardSet=} */ #cardSet2;
+	/** @type {CardSet} */ #hand2 = new CardSet();
+	/** @type {string} */ #actingPlayerID = '1';
+	/** @type {GameAgent=} */ #player2GameAgent;
+	/** @type {GameLogCollection=} */ #log;
+	/** @type {GameAction[]} */ #actions = [];
+	/** @type {GamePhases} */ #phase = GamePhases.REROLL;
 	/** @type {CardSlot[][]} */
 	#slots = [
 		new Array(5),
@@ -31,15 +30,15 @@ export class Game extends EventEmitter {
 	/** @type {Object.<string, GameLaneCollector[]>} */
 	#collectors = {};
 
-    /** @type {?Promise<CardType[]>} */ #cardTypesPromise = null;
+	/** @type {?Promise<CardType[]>} */ #cardTypesPromise = null;
 
-	constructor() {
+	constructor () {
 		super();
 		this.getCardTypes();
 		this.reset();
 	}
 
-	reset() {
+	reset () {
 		const source = new CardSet();
 		const source2 = new CardSet();
 		this.#phase = GamePhases.REROLL;
@@ -83,21 +82,21 @@ export class Game extends EventEmitter {
 		this.#player2GameAgent = new GameAgent(this, '2');
 	}
 
-	get cardSet1() {
+	get cardSet1 () {
 		return this.#cardSet1;
 	}
 
-	get phase() { return this.#phase; }
-	get hand1() { return this.#hand1; }
+	get phase () { return this.#phase; }
+	get hand1 () { return this.#hand1; }
 
-	get hand2() { return this.#hand2; }
-	get log() { return this.#log; }
+	get hand2 () { return this.#hand2; }
+	get log () { return this.#log; }
 
-	get cardSet2() {
+	get cardSet2 () {
 		return this.#cardSet2;
 	}
 
-    /** @return {Promise<CardType[]>} */ getCardTypes() {
+	/** @return {Promise<CardType[]>} */ getCardTypes () {
 		if (this.#cardTypesPromise) {
 			return this.#cardTypesPromise;
 		}
@@ -111,25 +110,25 @@ export class Game extends EventEmitter {
 		return this.#cardTypesPromise;
 	}
 
-	get actingPlayerID() { return this.#actingPlayerID; }
+	get actingPlayerID () { return this.#actingPlayerID; }
 
-	getCardByID(/** @type {string} */ id) {
+	getCardByID (/** @type {string} */ id) {
 		return this.#cards.find(card => card.id === id);
 	}
 
 	/**
 	 * @return {CardSlot}
 	 */
-	getSlot(/** @type {number} */ row, /** @type {number} */ col) {
+	getSlot (/** @type {number} */ row, /** @type {number} */ col) {
 		return this.#slots[row][col];
 	}
 
-	getSlots() {
+	getSlots () {
 		return this.#slots.flat();
 	}
 
 	/** @returns {GameLaneCollector} */
-	getGameLaneCollector(/** @type {string} */ player, /** @type {number} */ row) {
+	getGameLaneCollector (/** @type {string} */ player, /** @type {number} */ row) {
 		return this.#collectors[player][row];
 	}
 
@@ -137,7 +136,7 @@ export class Game extends EventEmitter {
 	 * @param {GameAction} gameAction
 	 * @returns {Promise<GameActionResult>}
 	 */
-	act(gameAction) {
+	act (gameAction) {
 		if (gameAction instanceof RerollAction) {
 			/** @type {Card[]} */
 			const removeCards = [];
@@ -189,13 +188,13 @@ export class Game extends EventEmitter {
 		return Promise.reject(new GameActionResult(false, ERROR_CODES.unknown_action));
 	}
 
-	finalizeGame() {
+	finalizeGame () {
 		this.#log?.append(new GameLog({
 			message: 'Game Complete'
 		}));
 	}
 
-	getDestroyableCards() {
+	getDestroyableCards () {
 		return this.#slots.flat().map(slot => slot.card).filter(card => card && card?.power < 1);
 	}
 
@@ -203,11 +202,11 @@ export class Game extends EventEmitter {
 	 * @fires Game#card_played
 	 * @return {String|undefined} Returns an error message if fails. Nothing if successful.
 	 */
-	placeCard(
-    /** @type {number} */ row,
-        /** @type {number} */ col,
-        /** @type {Card} */ card,
-        /** @type {string} */ playerId
+	placeCard (
+		/** @type {number} */ row,
+		/** @type {number} */ col,
+		/** @type {Card} */ card,
+		/** @type {string} */ playerId
 	) {
 		const slot = this.#slots[row][col];
 		if (!this.#cardSet1 || !this.#cardSet2) {
@@ -264,7 +263,7 @@ export class Game extends EventEmitter {
 		return undefined;
 	}
 
-	eventNames() {
+	eventNames () {
 		return [
 			Game.EVENT_CARD_PLAYED,
 			Game.EVENT_ACTION

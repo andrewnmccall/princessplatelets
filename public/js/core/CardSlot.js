@@ -1,14 +1,15 @@
 import EventEmitter from './EventEmitter.js';
-import { CardEffectTarget } from '../core.js';
+import { CardEffect, CardEffectTarget } from '../core.js';
+import { Card } from './Card.js';
 
 export class CardSlot extends EventEmitter {
-    /** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
-    /** @type {number} */ #row;
-    /** @type {number} */ #col;
-    /** @type {Card=} */ #card;
-    /** @type {number} */ #pawnCount = 0;
-    /** @type {String=} */ #player;
-    /** @type {Object.<string, Object.<string, CardEffect[]>>} */ #effects = {};
+	/** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
+	/** @type {number} */ #row;
+	/** @type {number} */ #col;
+	/** @type {Card=} */ #card;
+	/** @type {number} */ #pawnCount = 0;
+	/** @type {String=} */ #player;
+	/** @type {Object.<string, Object.<string, CardEffect[]>>} */ #effects = {};
 
 	/**
 	 * @param {Object} args
@@ -17,7 +18,7 @@ export class CardSlot extends EventEmitter {
 	 * @param {number} [args.pawnCount]
 	 * @param {string} [args.player]
 	 */
-	constructor({
+	constructor ({
 		row, col, pawnCount, player
 	}) {
 		super();
@@ -28,32 +29,32 @@ export class CardSlot extends EventEmitter {
 	}
 
 	/** @return {number} */
-	get pawnCount() {
+	get pawnCount () {
 		return this.#pawnCount;
 	}
 
 	/** @return {Card=} */
-	get card() {
+	get card () {
 		return this.#card;
 	}
 
 	/** @return ?{string} */
-	get player() {
+	get player () {
 		return this.#player;
 	}
 
 	/** @return {String=} */
-	get playerID() {
+	get playerID () {
 		return this.#player;
 	}
 
-	get row() { return this.#row; }
-	get col() { return this.#col; }
+	get row () { return this.#row; }
+	get col () { return this.#col; }
 
-	change(
-    /** @type {number} */ pawnCountInc,
-        /** @type {string} */ player,
-        /** @type {?Card} */ card
+	change (
+		/** @type {number} */ pawnCountInc,
+		/** @type {string} */ player,
+		/** @type {?Card} */ card
 	) {
 		this.#pawnCount = this.#pawnCount + pawnCountInc;
 		this.#player = player;
@@ -64,10 +65,10 @@ export class CardSlot extends EventEmitter {
 		this.#applyEffectsToCard();
 	}
 
-	addEffects(
-    /** @type {string} */ playerId,
-        /** @type {string} */ cardId,
-        /** @type {CardEffect[]} */ effects
+	addEffects (
+		/** @type {string} */ playerId,
+		/** @type {string} */ cardId,
+		/** @type {CardEffect[]} */ effects
 	) {
 		this.#effects[playerId] = this.#effects[playerId] || {};
 		this.#effects[playerId][cardId] = this.#effects[playerId][cardId] || [];
@@ -76,9 +77,9 @@ export class CardSlot extends EventEmitter {
 		this.#applyEffectsToCard();
 	}
 
-	addEffectsFromCard(
-    /** @type {string} */ playerId,
-        /** @type {Card} */ card
+	addEffectsFromCard (
+		/** @type {string} */ playerId,
+		/** @type {Card} */ card
 	) {
 		if (card.cardType.effect) {
 			this.addEffects(playerId, card.id, [card.cardType.effect]);
@@ -86,7 +87,7 @@ export class CardSlot extends EventEmitter {
 	}
 
 	/** @returns {CardEffect[]} */
-	getEffects(/** @type {string=} */ playerId) {
+	getEffects (/** @type {string=} */ playerId) {
 		if (playerId) {
 			return Object.values(this.#effects[playerId] || {}).flat();
 		}
@@ -95,13 +96,13 @@ export class CardSlot extends EventEmitter {
 			.flat(2);
 	}
 
-	eventNames() {
+	eventNames () {
 		return [
 			CardSlot.EVENT_CHANGE
 		];
 	}
 
-	#applyEffectsToCard() {
+	#applyEffectsToCard () {
 		if (!this.#card) {
 			return;
 		}
