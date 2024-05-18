@@ -3,8 +3,14 @@
 }
 
 
-pp-deck, pp-portfolio {
+pp-deck {
 	display:block;
+}
+pp-portfolio {
+	display:flex;
+	ol {
+		min-width: 7rem;
+	}
 }
 pp-deck pp-card {
 	position: relative;

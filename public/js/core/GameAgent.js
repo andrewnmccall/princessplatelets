@@ -1,8 +1,8 @@
-import { Game } from './Game.js';
+import Game from './Game.js';
 import EventEmitter from './EventEmitter.js';
 import { PlayCardAction, PassAction, GameAction } from '../core.js';
 
-export class GameAgent extends EventEmitter {
+export default class GameAgent extends EventEmitter {
 	/** @type {Game} */ #game;
 	/** @type {string} */ #playerID;
 

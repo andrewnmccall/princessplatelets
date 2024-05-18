@@ -1,8 +1,8 @@
 import EventEmitter from './EventEmitter.js';
 import { CardEffect, CardEffectTarget } from '../core.js';
-import { Card } from './Card.js';
+import Card from './Card.js';
 
-export class CardSlot extends EventEmitter {
+export default class CardSlot extends EventEmitter {
 	/** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
 	/** @type {number} */ #row;
 	/** @type {number} */ #col;

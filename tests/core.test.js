@@ -5,8 +5,8 @@ import {Crypto} from '@peculiar/webcrypto';
 globalThis.crypto = new Crypto();
 
 import {CardAreaTrigger, CardEffect, CardEffectTarget, cardTypes} from '../public/js/core.js';
-import { Card } from '../public/js/core/Card.js';
-import { CardSlot } from '../public/js/core/CardSlot.js';
+import Card from '../public/js/core/Card.js';
+import CardSlot from '../public/js/core/CardSlot.js';
 describe('core.js', () => {
 	describe('Card', () => {
 		describe('setEffects', () => {

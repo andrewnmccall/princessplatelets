@@ -1,5 +1,5 @@
 import { PlayCardAction } from '../core.js';
-import { Game } from '../core/Game.js';
+import Game from '../core/Game.js';
 import CardElementProvider from './CardElementProvider.js';
 import CardSlotElement from './CardSlotElement.js';
 import DeckElement from './DeckElement.js';

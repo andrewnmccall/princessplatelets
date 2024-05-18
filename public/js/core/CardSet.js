@@ -1,7 +1,7 @@
-import { Card } from './Card.js';
+import Card from './Card.js';
 import EventEmitter from './EventEmitter.js';
 
-export class CardSet extends EventEmitter {
+export default class CardSet extends EventEmitter {
 	static EVENT_CHANGED = Symbol('changed');
 
 	/** @type {Card[]} */

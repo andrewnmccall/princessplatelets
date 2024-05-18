@@ -1,4 +1,4 @@
-import { Game } from '../core/Game.js';
+import Game from '../core/Game.js';
 import CardElement from './CardElement.js';
 export default class CardElementProvider {
 	/** @type {Game=} */ #game;

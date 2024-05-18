@@ -1,12 +1,12 @@
 import EventEmitter from './EventEmitter.js';
 import { GamePhases, cardTypes, GameLogCollection, CardType, RerollAction, GameActionResult, PassAction, GameLog, PlayCardAction, ERROR_CODES, CardAreaType, GameAction } from '../core.js';
-import { Card } from './Card.js';
-import { CardSlot } from './CardSlot.js';
-import { CardSet } from './CardSet.js';
-import { GameLaneCollector } from './GameLaneCollector.js';
-import { GameAgent } from './GameAgent.js';
+import Card from './Card.js';
+import CardSlot from './CardSlot.js';
+import CardSet from './CardSet.js';
+import GameLaneCollector from './GameLaneCollector.js';
+import GameAgent from './GameAgent.js';
 
-export class Game extends EventEmitter {
+export default class Game extends EventEmitter {
 	/** @type {symbol} */ static EVENT_CARD_PLAYED = Symbol('card_played');
 	/** @type {symbol} */ static EVENT_ACTION = Symbol('action');
 

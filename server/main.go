@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"socialinept/princessplatelets/server/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -85,6 +86,8 @@ func setupRouter() *gin.Engine {
 
 func main() {
 	r := setupRouter()
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8081")
+	models.ConnectDatabase()
+	users.
+		// Listen and Server in 0.0.0.0:8080
+		r.Run(":8081")
 }

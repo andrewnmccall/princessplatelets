@@ -1,9 +1,9 @@
 import {
 	RerollAction, GamePhases
 } from '../core.js';
-import { Card } from '../core/Card.js';
-import { CardSet } from '../core/CardSet.js';
-import { Game } from '../core/Game.js';
+import Card from '../core/Card.js';
+import CardSet from '../core/CardSet.js';
+import Game from '../core/Game.js';
 import {
 	registerEventListener
 } from './utils.js';

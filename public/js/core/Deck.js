@@ -1,4 +1,6 @@
 import EventEmitter from './EventEmitter.js';
 
-export class Deck extends EventEmitter {
+export default class Deck extends EventEmitter {
+	/** @type {string=} */ id;
+	/** @type {string=} */ name;
 }

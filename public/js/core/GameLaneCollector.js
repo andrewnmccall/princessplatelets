@@ -1,6 +1,6 @@
 import EventEmitter from './EventEmitter.js';
 
-export class GameLaneCollector extends EventEmitter {
+export default class GameLaneCollector extends EventEmitter {
 	static EVENT_CHANGED = Symbol('changed');
 	#points = 0;
 	#modifier = 0;

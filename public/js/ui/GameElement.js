@@ -1,5 +1,5 @@
 import { PassAction } from '../core.js';
-import { Game } from '../core/Game.js';
+import Game from '../core/Game.js';
 import CardElement from './CardElement.js';
 import CardElementProvider from './CardElementProvider.js';
 import DeckElement from './DeckElement.js';

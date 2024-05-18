@@ -1,4 +1,4 @@
-import { Card } from '../core/Card.js';
+import Card from '../core/Card.js';
 import {
 	ifElse
 } from './utils.js';

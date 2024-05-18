@@ -1,14 +1,11 @@
 import { CardEffect, CardType } from '../core.js';
 import EventEmitter from './EventEmitter.js';
 
-export class Card extends EventEmitter {
+export default class Card extends EventEmitter {
 	/** @type {symbol} */ static EVENT_CHANGE = Symbol('change');
-	/** @type {string} */
-	id;
+	/** @type {string} */ id;
 	/** @type {Object.<string, CardEffect[]>} */ #effects = {};
-	/** @type {CardType} */
-	cardType;
-
+	/** @type {CardType} */ cardType;
 	/** @type {Boolean} */ invertX = false;
 
 	/**

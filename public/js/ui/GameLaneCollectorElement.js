@@ -1,5 +1,5 @@
-import { GameLaneCollector } from '../core/GameLaneCollector.js';
-import { Game } from '../core/Game.js';
+import GameLaneCollector from '../core/GameLaneCollector.js';
+import Game from '../core/Game.js';
 
 export default class GameLaneCollectorElement extends HTMLElement {
 	/** @type {Number} */ #row = 0;

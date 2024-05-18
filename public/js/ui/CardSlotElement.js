@@ -1,4 +1,4 @@
-import { CardSlot } from '../core/CardSlot.js';
+import CardSlot from '../core/CardSlot.js';
 import CardElementProvider from './CardElementProvider.js';
 import { ifElse } from './utils.js';
 
